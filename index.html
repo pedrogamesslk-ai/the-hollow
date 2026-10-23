@@ -479,7 +479,8 @@ const GAMES = [
   { id: 'moomoo',       name: 'Moo Moo Mystery',                icon: '🐄', type: 'sec', c: ['#2a2a3a', '#0a0a12'] },
   { id: 'murderduels',  name: 'Murder Duels',                   icon: '🔪', type: 'sec', c: ['#1a2a5a', '#060a18'] },
   { id: 'mvs',          name: 'Murderers vs. Sheriffs',         icon: '🤠', type: 'sec', c: ['#2a3a5a', '#0a1018'] },
-  { id: 'petapeta',     name: 'Petapeta',                       icon: '👹', type: 'sec', c: ['#4a0c1a', '#140406'] },
+  { id: 'paranormal',   name: 'Paranormal',                     icon: '🕯️', type: 'sec', c: ['#2a0c3a', '#0a0412'] },
+  { id: 'petapeta',    name: 'Petapeta',                       icon: '👹', type: 'sec', c: ['#4a0c1a', '#140406'] },
   { id: 'needle',       name: 'Search for the Needle',          icon: '🔍', type: 'sec', c: ['#3a3a0c', '#121204'] },
   { id: 'sellalemon',   name: 'Sell a Lemon',                   icon: '🍋', type: 'sec', c: ['#4a4a0c', '#141404'] },
   { id: 'sonariahorror',name: 'Sonaria Horror Escape',          icon: '🦖', type: 'sec', c: ['#2a0c4a', '#0a0414'] },
@@ -726,11 +727,16 @@ let ai = { provider: 'gemini', key: '', gkey: '', gModels: [], gModelFast: '', g
 try { Object.assign(ai, JSON.parse(localStorage.getItem(AI_KEY)) || {}); } catch {}
 const hasKey = () => ai.provider === 'gemini' ? !!ai.gkey : !!ai.key;
 // versão 2 da escolha automática de modelos (estáveis primeiro): refaz a escolha antiga
-if (ai.gPickV !== 2) { ai.gModelFast = ai.gModelDeep = ''; ai.gPickV = 2; }
+// versão 3: o modo Rápido passa a usar o Gemini 3.5 Flash-Lite (com pesquisa no Google)
+if (ai.gPickV !== 3) { ai.gModelFast = ai.gModelDeep = ''; ai.gLastGood = {}; ai.gPickV = 3; }
+// a pausa geral da pesquisa foi trocada por um bloqueio por modelo: limpa a pausa antiga que deixava tudo sem pesquisa
+if (ai.gSearchV !== 1) { ai.gSearchPausedUntil = 0; ai.gSearchBlock = {}; ai.gSearchV = 1; }
 // resposta que estava sendo gerada quando a página foi fechada/recarregada não fica "carregando" para sempre
 ai.view.forEach(m => { if (m.notice) { m.details = '⚠️ ' + m.notice + (m.details ? '\n\n' + m.details : ''); delete m.notice; } });
 ai.view.forEach(m => { if (m.status === 'streaming') { m.status = 'done'; m.steps = []; m.error ||= 'Resposta interrompida (a página foi recarregada).'; } });
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
+// modelo preferido do modo Rápido: veloz e com suporte à pesquisa no Google
+const PREFERRED_LITE = 'gemini-3.5-flash-lite';
 let aiStream = null;
 let sdkPromise = null;
 
@@ -846,8 +852,8 @@ function renderChat() {
           <button data-ai-mode="fast" class="${ai.mode === 'fast' ? 'active' : ''}">⚡ Rápida</button>
           <button data-ai-mode="deep" class="${ai.mode === 'deep' ? 'active' : ''}">🔬 Profunda</button>
         </div>
-        ${ai.provider === 'gemini' && Date.now() < (ai.gSearchPausedUntil || 0)
-          ? `<button class="btn" data-ai="resume-search" title="A pesquisa ficou sem cota. Clique para tentar usar de novo.">🔎 Reativar pesquisa</button>` : ''}
+        ${ai.provider === 'gemini' && (Date.now() < (ai.gSearchPausedUntil || 0) || Object.keys(ai.gSearchBlock || {}).some(searchBlocked))
+          ? `<button class="btn" data-ai="resume-search" title="Algum modelo ficou sem pesquisa. Clique para tentar pesquisar com todos de novo.">🔎 Reativar pesquisa</button>` : ''}
         <button class="btn" data-ai="new" ${busy ? 'disabled' : ''}>Nova conversa</button>
       </div>
     </div>
@@ -971,7 +977,7 @@ async function loadGeminiModels() {
     toast('⚠️ A chave não funcionou no Gemini: ' + err.message);
   }
   if (!ai.gModels.includes(ai.gModelDeep)) ai.gModelDeep = pickGeminiModel(ai.gModels, 'pro') || pickGeminiModel(ai.gModels, 'flash') || 'gemini-2.5-pro';
-  if (!ai.gModels.includes(ai.gModelFast)) ai.gModelFast = pickGeminiModel(ai.gModels, 'flash') || 'gemini-2.5-flash';
+  if (!ai.gModels.includes(ai.gModelFast)) ai.gModelFast = (ai.gModels.includes(PREFERRED_LITE) || !ai.gModels.length ? PREFERRED_LITE : '') || pickGeminiModel(ai.gModels, 'flash') || 'gemini-2.5-flash';
   saveAi();
 }
 
@@ -987,6 +993,25 @@ function geminiError(status, msg) {
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const SEARCH_PAUSE_MS = 30 * 60 * 1000;
+const SEARCH_BLOCK_MS = 12 * 60 * 60 * 1000;
+// modelos que têm pesquisa no Google na cota grátis (os Gemini 3.x só pesquisam com faturamento ativado)
+const FREE_SEARCH_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
+const searchBlocked = m => Date.now() < (ai.gSearchBlock?.[m] || 0);
+const hhmm = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+// resumo da pesquisa no Google que vai no topo dos detalhes técnicos
+function searchReport({ usedSearch, usedModel, queries = [], sources = 0, searchOn, searchFails }) {
+  const out = [];
+  if (usedSearch && queries.length) out.push(`🔎 PESQUISA NO GOOGLE: ✅ USADA (${usedModel}) · ${queries.length} busca(s) · ${sources} fonte(s)`, ...queries.map(q => '   • ' + q));
+  else if (usedSearch) out.push(`🔎 PESQUISA NO GOOGLE: ⚠️ estava ligada no ${usedModel}, mas o modelo decidiu não pesquisar nesta pergunta`);
+  else if (!searchOn) out.push('🔎 PESQUISA NO GOOGLE: ❌ NÃO USADA (pausada; clique em "🔎 Reativar pesquisa")');
+  else out.push('🔎 PESQUISA NO GOOGLE: ❌ NÃO USADA (nenhum modelo da sua chave conseguiu pesquisar agora). As informações podem estar desatualizadas.');
+  if (searchFails.length) out.push('Modelos que não conseguiram pesquisar nesta pergunta:', ...searchFails.map(f => '   • ' + f));
+  const blocked = Object.keys(ai.gSearchBlock || {}).filter(searchBlocked);
+  if (blocked.length) out.push(`Sem pesquisa por enquanto: ${blocked.map(m => `${m} (até ${hhmm(ai.gSearchBlock[m])})`).join(', ')}`);
+  if ([...searchFails, ...blocked].some(f => /^gemini-3/.test(f))) out.push('ℹ️ Na cota grátis do Google, os modelos Gemini 3.x (incluindo o 3.5 Flash-Lite) NÃO têm pesquisa no Google: ela só funciona com o faturamento ativado no Google AI Studio. Os Gemini 2.5 Flash/Flash-Lite têm pesquisa grátis, então o app usa eles quando precisa pesquisar.');
+  return [...out, ''];
+}
 const NO_SEARCH_NOTE = `
 
 IMPORTANTE — AGORA VOCÊ NÃO TEM ACESSO À PESQUISA NA WEB (a cota acabou). Ignore as instruções acima sobre pesquisar.
@@ -1107,7 +1132,7 @@ async function askGemini(question) {
   refreshChatControls();
   paintChat('bottom');
   const ticker = setInterval(() => paintChat(), 1000);
-  const attempts = [];
+  const attempts = [], searchFails = [];
 
   try {
     if (!ai.gModelDeep || !ai.gModelFast) await loadGeminiModels();
@@ -1117,25 +1142,35 @@ async function askGemini(question) {
     // começa pelo último modelo que funcionou neste modo; no Rápido prefere o flash-lite (o mais veloz)
     const candidates = [...new Set([
       ai.gLastGood?.[ai.mode],
-      ...(deep ? [ai.gModelDeep] : stableFlash.filter(n => n.endsWith('-lite')).slice(0, 1)),
+      ...(deep ? [ai.gModelDeep] : [ai.gModelFast, PREFERRED_LITE, ...stableFlash.filter(n => n.endsWith('-lite')).slice(0, 1)]),
       ai.gModelFast,
+      PREFERRED_LITE,
       ...stableFlash,
-      ...(ai.gModels.length ? [] : ['gemini-2.5-flash']),
+      ...(ai.gModels.length ? [] : ['gemini-2.5-flash-lite', 'gemini-2.5-flash']),
     ].filter(n => n && (!ai.gModels.length || ai.gModels.includes(n))))].slice(0, 6);
     const system = SYSTEM + (deep
       ? '\n\nMODO PROFUNDO: faça muitas pesquisas diferentes no Google, compare fontes e dê uma resposta completa e verificada.'
-      : '\n\nMODO RÁPIDO: faça no máximo 1 ou 2 pesquisas e responda curto e direto (poucas linhas), sem introdução.');
+      : '\n\nMODO RÁPIDO: SEMPRE use a ferramenta de pesquisa do Google antes de responder (1 ou 2 pesquisas, nunca zero) e responda curto e direto (poucas linhas), sem introdução.');
 
-    // se a pesquisa no Google ficou sem cota há pouco tempo, nem tenta (economiza tempo e cota)
-    let search = Date.now() >= (ai.gSearchPausedUntil || 0);
-    const searchAtStart = search;
-    note(`backend: ${ai.gBackend || 'studio'} · modelos disponíveis: ${ai.gModels.length}${search ? '' : ' · pesquisa pausada (sem cota)'}`);
-    view.steps = [{ label: search ? '🧠 Pensando e pesquisando no Google...' : '🧠 Pensando (pesquisa no Google pausada: sem cota)...', live: true }];
+    // a pesquisa é liberada por modelo: na cota grátis os Gemini 3.x não pesquisam, mas os 2.5 Flash/Flash-Lite sim.
+    // então primeiro tenta TODOS os modelos que podem pesquisar e só depois responde sem pesquisa
+    const searchOn = Date.now() >= (ai.gSearchPausedUntil || 0);
+    const freeSearch = FREE_SEARCH_MODELS.filter(n => !ai.gModels.length || ai.gModels.includes(n));
+    const searchPool = searchOn ? [...new Set([...candidates, ...freeSearch])].filter(m => !searchBlocked(m)).slice(0, 5) : [];
+    const plan = [...searchPool.map(model => ({ model, search: true })), ...candidates.slice(0, 4).map(model => ({ model, search: false }))];
+    note(`backend: ${ai.gBackend || 'studio'} · modelos disponíveis: ${ai.gModels.length}`);
+    note(`com pesquisa: ${searchPool.join(', ') || 'nenhum'}${searchOn ? '' : ' (pesquisa pausada)'}`);
+    const blockedNow = Object.keys(ai.gSearchBlock || {}).filter(searchBlocked);
+    if (blockedNow.length) note(`sem pesquisa por enquanto: ${blockedNow.join(', ')}`);
+    view.steps = [{ label: searchPool.length ? '🧠 Pensando e pesquisando no Google...' : '🧠 Pensando (nenhum modelo com pesquisa disponível agora)...', live: true }];
 
-    let result = null, last = null, usedModel = '', usedSearch = search;
-    for (let i = 0; i < candidates.length && !result; i++) {
-      const model = candidates[i];
-      let s = search, thinking = deep ? 'full' : 'low', retried = false, triedNoSearch = false;
+    let result = null, last = null, usedModel = '', usedSearch = false;
+    const dead = new Set();
+    for (let i = 0; i < plan.length && !result; i++) {
+      const { model, search: s } = plan[i];
+      if (dead.has(model)) continue;
+      if (!s && i === searchPool.length && searchPool.length) step('🔁 Nenhum modelo conseguiu pesquisar; respondendo sem a pesquisa');
+      let thinking = deep ? 'full' : 'low', retried = false;
       for (;;) {
         const r = await geminiAttempt({ model, search: s, thinking, system: s ? system : system + NO_SEARCH_NOTE, contents: [...ai.gmsgs, userMsg], view, signal: ctrl.signal, note, timeoutMs: deep ? 60000 : 25000 });
         if (r.aborted) throw new Error('aborted');
@@ -1151,8 +1186,16 @@ async function askGemini(question) {
         if (r.status === 400 && thinking && /think|thought/i.test(r.msg)) { thinking = false; continue; }
         const why = { 429: 'sem cota', 403: 'sem permissão', 404: 'não existe', 400: 'recusou o pedido', timeout: 'demorou demais', rede: 'falha de conexão', vazio: 'respondeu vazio' }[r.status]
           || (r.status >= 500 ? 'sobrecarregado' : 'erro ' + r.status);
-        // sem cota COM pesquisa: testa o mesmo modelo sem pesquisa para saber se a pesquisa é o bloqueio
-        if (r.status === 429 && s) { s = false; triedNoSearch = true; step(`🔁 ${model} sem cota com pesquisa; testando sem a pesquisa`); continue; }
+        if (r.status === 404) dead.add(model);
+        // este modelo não consegue pesquisar (sem cota ou sem acesso à pesquisa): marca e passa para o próximo COM pesquisa
+        if (s && [400, 403, 429].includes(r.status)) {
+          // "limit: 0" = a cota nem existe (ex.: Gemini 3 na cota grátis), não adianta tentar de novo logo
+          const long = r.status !== 429 || /limit:\s*0\b/.test(r.msg);
+          ai.gSearchBlock = { ...ai.gSearchBlock, [model]: Date.now() + (long ? SEARCH_BLOCK_MS : SEARCH_PAUSE_MS) };
+          searchFails.push(`${model}: ${why} com pesquisa (${r.status}${long ? ', bloqueado por 12h' : ', bloqueado por 30 min'})`);
+          step(`⏭️ ${model} não conseguiu pesquisar (${why}); tentando outro modelo com pesquisa`);
+          break;
+        }
         // servidor lotado ou lento: espera um pouco e tenta o mesmo modelo mais uma vez
         if ((r.status >= 500 || r.status === 'timeout' || r.status === 'rede' || r.status === 'vazio') && !retried) {
           // resposta vazia: na segunda vez tenta sem o modo de raciocínio
@@ -1163,9 +1206,7 @@ async function askGemini(question) {
           if (ctrl.signal.aborted) throw new Error('aborted');
           continue;
         }
-        // sem pesquisa deu outro erro que não cota: a pesquisa provavelmente é o bloqueio, segue sem ela
-        if (triedNoSearch && r.status !== 429) search = false;
-        step(i + 1 < candidates.length ? `⏭️ ${model} ${why}, tentando ${candidates[i + 1]}` : `❌ ${model} ${why}`);
+        step(i + 1 < plan.length ? `⏭️ ${model} ${why}, tentando outro modelo` : `❌ ${model} ${why}`);
         break;
       }
     }
@@ -1180,7 +1221,6 @@ async function askGemini(question) {
     view.steps.forEach(s => s.live = false);
     view.steps = view.steps.filter(s => !s.label.startsWith('🧠'));
     if (usedModel !== candidates[0]) view.steps.push({ label: '✅ Respondido com ' + usedModel });
-    if (!usedSearch && searchAtStart) ai.gSearchPausedUntil = Date.now() + SEARCH_PAUSE_MS;
     if (result.blocked || /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/.test(result.finish)) {
       view.error = 'O Gemini bloqueou essa resposta. Tente reformular a pergunta.';
     } else {
@@ -1191,14 +1231,15 @@ async function askGemini(question) {
       else view.error ||= 'O Gemini não retornou resposta. Tente de novo.';
     }
     // avisos ficam nos detalhes técnicos para a resposta ficar limpa
-    const warn = usedSearch ? [] : ['⚠️ Resposta SEM pesquisa no Google: a cota de pesquisa da sua chave acabou (o programa tenta de novo em 30 min). As informações podem estar desatualizadas.', ''];
+    const warn = searchReport({ usedSearch, usedModel, queries: result.queries, sources: view.sources.length, searchOn, searchFails });
     // se o modelo mesmo assim abrir a resposta com um "> Aviso: ...", move para os detalhes
     const lead = view.text.match(/^\s*>[^\n]*(?:aviso|pesquisa)[^\n]*(?:\n>[^\n]*)*\n*/i);
     if (lead) { warn.push('Aviso do modelo: ' + lead[0].replace(/^\s*>\s?/gm, '').trim(), ''); view.text = view.text.slice(lead[0].length); }
-    if (warn.length || attempts.length || !view.text) view.details = [...warn, ...attempts, ...log].join('\n');
+    // os detalhes técnicos sempre aparecem, para mostrar se a pesquisa foi usada
+    view.details = [...warn, ...attempts, ...(attempts.length ? [''] : []), ...log].join('\n');
   } catch (err) {
     view.error = aiStream?.aborted ? 'Resposta interrompida.' : err.message;
-    view.details = [...attempts, ...log].join('\n');
+    view.details = [...searchReport({ searchOn: Date.now() >= (ai.gSearchPausedUntil || 0), searchFails }), ...attempts, ...log].join('\n');
     view.steps = view.steps.filter(s => !s.live);
   } finally {
     clearInterval(ticker);
@@ -1444,7 +1485,7 @@ document.addEventListener('click', e => {
       if (ai.provider === 'gemini') ai.gkey = ''; else ai.key = '';
       saveAi(); render(); toast('Chave removida.');
     }
-    if (act === 'resume-search') { ai.gSearchPausedUntil = 0; saveAi(); render(); toast('🔎 A próxima pergunta vai tentar usar a pesquisa no Google.'); }
+    if (act === 'resume-search') { ai.gSearchPausedUntil = 0; ai.gSearchBlock = {}; saveAi(); render(); toast('🔎 A próxima pergunta vai tentar usar a pesquisa no Google.'); }
     if (act === 'reload-models') loadGeminiModels().then(() => { render(); toast('Lista de modelos atualizada.'); });
     return;
   }
