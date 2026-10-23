@@ -765,6 +765,53 @@ function getSDK() {
   return sdkPromise;
 }
 
+// cópia da skill do arquivo oraculo-skill.md (se mudar um, atualize o outro)
+const ORACULO_SKILL = `# Skill: Oráculo do Hollow
+
+## Quem você é
+Você é o Oráculo do Hollow: um guia experiente do evento The Hollow do Roblox, que fala com um jogador brasileiro.
+Seu trabalho é fazer o jogador completar os jogos do evento o mais rápido possível, sem ele precisar abrir vídeos ou wikis.
+
+## Como usar a pesquisa
+- Trate os resultados da pesquisa como a fonte principal. O que você já sabe serve só para completar.
+- Prefira, nesta ordem: wiki oficial do jogo ou do evento, guias de sites de games (GamesRadar, Pro Game Guides, Beebom etc.), Roblox DevForum, Reddit, e por último títulos de vídeos do YouTube.
+- Vídeos do YouTube quase nunca trazem o passo a passo no texto: use o título só para confirmar o nome da badge ou da missão, nunca para inventar os passos.
+- Se as fontes discordarem, diga qual parece mais recente ou mais confiável e por quê.
+- Se nenhuma fonte trouxer o passo a passo, diga isso com clareza e indique o melhor link para conferir (de preferência um vídeo de walkthrough das fontes).
+
+## Regras de ouro
+1. Nunca invente passos, locais, itens ou nomes de badge.
+2. Nunca dê passos vagos como "procure a missão", "complete a tarefa" ou "explore o mapa". Cada passo diz exatamente onde ir e o que fazer.
+3. Use os nomes em inglês que aparecem no jogo (nome da badge, do item, do NPC, do botão), com a tradução entre parênteses quando ajudar. Ex.: **Good For Your Bones** (badge).
+4. Cite as fontes que usou no formato [título](url), no fim do passo ou da seção.
+5. Use o bloco de progresso do jogador: não explique de novo o que ele já concluiu e sugira o que falta.
+
+## Formato por tipo de pergunta
+
+### "Como faço o jogo/missão X?"
+**🎯 Objetivo:** o que precisa ser feito e qual badge ou recompensa conta para o evento.
+**📋 Antes de começar:** requisitos (nível, item, modo de jogo, servidor, outro jogo antes).
+**🪜 Passo a passo:** lista numerada, um passo por ação, com local exato e o que clicar, pegar ou entregar.
+**💡 Dicas:** atalhos, o que fazer se travar, erros comuns (ex.: a badge não aparece, precisa sair e entrar de novo).
+**⏱️ Tempo aproximado**, se as fontes informarem.
+
+### "Quais são as recompensas / o que ganho?"
+Tabela ou lista: recompensa → como consegue → em qual jogo.
+
+### "Tem código?"
+Liste só códigos que aparecem nas fontes, com a data da fonte, e avise que códigos expiram. Nunca invente código.
+
+### "Bugou / não recebi a badge"
+Causas mais comuns primeiro, depois a solução de cada uma, e por fim onde reportar (Discord ou grupo oficial do jogo).
+
+### "O que falta? / Monta um plano"
+Use o bloco de progresso: liste os jogos pendentes começando pelos principais e, dentro deles, pelos mais rápidos (se as fontes informarem o tempo). Uma linha por jogo, com o objetivo resumido.
+
+## Tamanho da resposta
+- Modo Rápido: direto ao ponto, sem introdução, mas com todos os passos concretos.
+- Modo Profundo: guia completo com todas as seções acima, comparando as fontes.
+- Nunca termine com perguntas genéricas ("Quer saber mais alguma coisa?"). Se fizer sentido, sugira o próximo jogo pendente.`;
+
 const SYSTEM = `Você é o "Oráculo do Hollow", um assistente especialista no evento de Halloween "The Hollow" do Roblox.
 Você ajuda um jogador brasileiro a completar o evento. Responda sempre em português do Brasil, de forma clara e direta, usando markdown (listas, **negrito**, títulos curtos).
 
@@ -777,7 +824,9 @@ Como trabalhar:
 - Prefira fontes recentes e diga quando informações conflitam ou quando não encontrou algo confiável. Nunca invente passos de missão.
 - Para guias de missão, dê o passo a passo numerado e objetivo.
 - Cada mensagem do jogador traz um bloco <progresso> com o que ele já concluiu e as anotações dele. Use isso para personalizar (ex.: sugerir o que falta, montar um plano). Não repita o bloco inteiro na resposta.
-- Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
+- Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.
+
+${ORACULO_SKILL}`;
 
 function progressBlock() {
   const line = g => `- ${g.name}: ${state.done[g.id] ? 'CONCLUÍDO' : 'pendente'}${state.notes[g.id] ? ` (anotação: ${state.notes[g.id].replace(/\s+/g, ' ').slice(0, 200)})` : ''}`;
@@ -882,10 +931,15 @@ function paintChat(force) {
   if (!hasKey()) {
     box.innerHTML = `<div class="key-card">
       <h3>🔑 Conecte o Oráculo</h3>
-      <p>O Oráculo usa o <b>Gemini</b> (Google) com pesquisa no Google. Cole aqui sua chave da API do Gemini (começa com <code>AIza</code> ou <code>AQ.</code>).
-      Crie uma em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
-      A chave fica salva só neste navegador. Também aceita chave do Claude (<code>sk-ant-</code>).</p>
-      <div class="key-row"><input id="apiKeyInput" type="password" placeholder="AIza... ou AQ...." autocomplete="off"><button class="btn primary" data-ai="save-key">Salvar chave</button></div>
+      <p><b>1. Chave do Gemini (obrigatória)</b> ${ai.gkey ? '✅' : '— falta esta'}<br>
+      É a IA que responde. Começa com <code>AIza</code> ou <code>AQ.</code>. Crie grátis em
+      <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+      Também aceita chave do Claude (<code>sk-ant-</code>).</p>
+      <p><b>2. Chave do Tavily (recomendada)</b> ${ai.tkey ? '✅ salva' : '— opcional'}<br>
+      Faz o Oráculo pesquisar na web mesmo na cota grátis do Gemini. Começa com <code>tvly-</code>. Crie grátis em
+      <a href="https://app.tavily.com" target="_blank" rel="noopener">app.tavily.com</a> (1.000 créditos por mês, sem cartão).</p>
+      <p>Cole uma chave por vez e clique em Salvar. Elas ficam salvas só neste navegador.</p>
+      <div class="key-row"><input id="apiKeyInput" type="password" placeholder="${ai.tkey ? 'AIza... ou AQ....' : 'AIza..., AQ.... ou tvly-...'}" autocomplete="off"><button class="btn primary" data-ai="save-key">Salvar chave</button></div>
     </div>`;
     return;
   }
@@ -1562,10 +1616,14 @@ document.addEventListener('click', e => {
     if (act === 'new' && !aiStream) { if (!ai.view.length || confirm('Começar uma nova conversa? A atual será apagada.')) { ai.msgs = []; ai.gmsgs = []; ai.view = []; saveAi(); render(); } return; }
     if (act === 'save-key') {
       const v = ($('#apiKeyInput')?.value || '').trim();
-      if (v.startsWith('tvly-')) { ai.tkey = v; saveAi(); render(); return toast('🔑 Chave do Tavily salva! O Oráculo agora pesquisa na web pelo Tavily.'); }
+      if (v.startsWith('tvly-')) {
+        ai.tkey = v; saveAi(); render();
+        return toast(hasKey() ? '🔑 Chave do Tavily salva! O Oráculo agora pesquisa na web pelo Tavily.' : '🔑 Chave do Tavily salva! Agora cole a chave do Gemini (AIza...) para liberar o Oráculo.');
+      }
       if (/^(AIza|AQ\.)/.test(v)) {
         ai.gkey = v; ai.provider = 'gemini'; ai.gModelFast = ai.gModelDeep = ''; ai.gBackend = '';
-        saveAi(); toast('🔑 Chave do Gemini salva! Buscando modelos...');
+        // libera o chat na hora; os modelos são buscados em seguida
+        saveAi(); render(); toast('🔑 Chave do Gemini salva! Buscando modelos...');
         return loadGeminiModels().then(() => { render(); if (ai.gBackend) toast(`✅ Oráculo pronto (${ai.gBackend === 'vertex' ? 'Vertex AI' : 'AI Studio'}) com ${ai.gModelDeep}`); });
       }
       if (v.startsWith('sk-ant-')) { ai.key = v; ai.provider = 'claude'; saveAi(); render(); return toast('🔑 Chave do Claude salva!'); }
