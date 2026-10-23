@@ -728,6 +728,7 @@ const hasKey = () => ai.provider === 'gemini' ? !!ai.gkey : !!ai.key;
 // versão 2 da escolha automática de modelos (estáveis primeiro): refaz a escolha antiga
 if (ai.gPickV !== 2) { ai.gModelFast = ai.gModelDeep = ''; ai.gPickV = 2; }
 // resposta que estava sendo gerada quando a página foi fechada/recarregada não fica "carregando" para sempre
+ai.view.forEach(m => { if (m.notice) { m.details = '⚠️ ' + m.notice + (m.details ? '\n\n' + m.details : ''); delete m.notice; } });
 ai.view.forEach(m => { if (m.status === 'streaming') { m.status = 'done'; m.steps = []; m.error ||= 'Resposta interrompida (a página foi recarregada).'; } });
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
 let aiStream = null;
@@ -839,7 +840,7 @@ function renderChat() {
   <section class="card chat">
     <div class="chat-head">
       <div class="orb">🔮</div>
-      <div><h2>Oráculo do Hollow</h2><small>${ai.provider === 'gemini' ? `Gemini (${esc((ai.mode === 'deep' ? ai.gModelDeep : ai.gModelFast) || 'automático')}) · pesquisa no Google` : 'Claude Opus 5.5 · pesquisa na web'} em tempo real</small></div>
+      <div><h2>Oráculo do Hollow</h2><small>${ai.provider === 'gemini' ? `Gemini (${esc(ai.gLastGood?.[ai.mode] || (ai.mode === 'deep' ? ai.gModelDeep : ai.gModelFast) || 'automático')}) · pesquisa no Google` : 'Claude Opus 5.5 · pesquisa na web'} em tempo real</small></div>
       <div class="right">
         <div class="seg" title="Rápida: responde mais rápido. Profunda: faz várias pesquisas e confere fontes.">
           <button data-ai-mode="fast" class="${ai.mode === 'fast' ? 'active' : ''}">⚡ Rápida</button>
@@ -990,20 +991,27 @@ const NO_SEARCH_NOTE = `
 
 IMPORTANTE — AGORA VOCÊ NÃO TEM ACESSO À PESQUISA NA WEB (a cota acabou). Ignore as instruções acima sobre pesquisar.
 Não tente chamar nenhuma ferramenta. Responda direto, só com o que você já sabe sobre o Roblox, o evento The Hollow e os jogos.
-Avise de forma breve no início que está respondendo sem pesquisa e que detalhes recentes do evento (datas, missões novas) podem estar desatualizados.
+NÃO avise que está sem pesquisa e não coloque avisos no início da resposta (o app já mostra isso nos detalhes técnicos). Só comente que algo pode estar desatualizado quando a pergunta for sobre datas ou novidades muito recentes.
 Se não souber algo específico, diga isso com sinceridade e sugira onde o jogador pode conferir (ex.: página do evento no Roblox, wiki do jogo, Discord oficial).`;
 
 // uma tentativa com um modelo: transmite a resposta para a tela e devolve o resultado (nunca lança erro)
-async function geminiAttempt({ model, search, thinking, system, contents, view, signal, note }) {
+// raciocínio: 'full' = pensa à vontade e mostra o resumo; 'low' = pensa o mínimo (bem mais rápido); false = padrão do modelo
+function thinkingConfigFor(model, thinking) {
+  if (thinking === 'full') return { thinkingConfig: { includeThoughts: true } };
+  if (thinking === 'low') return { thinkingConfig: /^gemini-2\./.test(model) ? { thinkingBudget: 0 } : { thinkingLevel: 'low' } };
+  return {};
+}
+
+async function geminiAttempt({ model, search, thinking, system, contents, view, signal, note, timeoutMs = 60000 }) {
   const ctrl = new AbortController();
   const onAbort = () => ctrl.abort();
   signal.addEventListener('abort', onAbort);
   // desiste deste modelo se ele ficar 60s sem mandar nada (fila de servidor lotado)
   let last = Date.now(), timedOut = false;
-  const timer = setInterval(() => { if (Date.now() - last > 60000) { timedOut = true; ctrl.abort(); } }, 1000);
+  const timer = setInterval(() => { if (Date.now() - last > timeoutMs) { timedOut = true; ctrl.abort(); } }, 1000);
   const textStart = view.text.length, thinkStart = view.thinking.length;
   const out = { ok: false, status: 0, msg: '', gotText: false, finish: '', blocked: '', queries: [] };
-  note(`→ ${model} (pesquisa ${search ? 'ligada' : 'desligada'}, raciocínio ${thinking ? 'ligado' : 'desligado'})`);
+  note(`→ ${model} (pesquisa ${search ? 'ligada' : 'desligada'}, raciocínio ${{ full: 'completo', low: 'mínimo' }[thinking] || 'padrão'})`);
   try {
     const res = await fetch(`${gModelUrl(model, 'streamGenerateContent')}?alt=sse&${gKeyParam()}`, {
       method: 'POST',
@@ -1013,7 +1021,7 @@ async function geminiAttempt({ model, search, thinking, system, contents, view, 
         systemInstruction: { parts: [{ text: system }] },
         contents,
         tools: search ? [{ google_search: {} }] : undefined,
-        generationConfig: thinking ? { thinkingConfig: { includeThoughts: true } } : {},
+        generationConfig: thinkingConfigFor(model, thinking),
       }),
     });
     last = Date.now();
@@ -1106,15 +1114,17 @@ async function askGemini(question) {
     const deep = ai.mode === 'deep';
     // a cota é separada por modelo: se o escolhido falhar, tenta os outros flash/flash-lite estáveis
     const stableFlash = ai.gModels.filter(n => /^gemini-[\d.]+-flash(-lite)?$/.test(n)).sort((a, b) => geminiScore(b) - geminiScore(a));
+    // começa pelo último modelo que funcionou neste modo; no Rápido prefere o flash-lite (o mais veloz)
     const candidates = [...new Set([
-      deep ? ai.gModelDeep : ai.gModelFast,
+      ai.gLastGood?.[ai.mode],
+      ...(deep ? [ai.gModelDeep] : stableFlash.filter(n => n.endsWith('-lite')).slice(0, 1)),
       ai.gModelFast,
       ...stableFlash,
       ...(ai.gModels.length ? [] : ['gemini-2.5-flash']),
     ].filter(n => n && (!ai.gModels.length || ai.gModels.includes(n))))].slice(0, 6);
     const system = SYSTEM + (deep
       ? '\n\nMODO PROFUNDO: faça muitas pesquisas diferentes no Google, compare fontes e dê uma resposta completa e verificada.'
-      : '\n\nMODO RÁPIDO: faça poucas pesquisas e responda de forma curta.');
+      : '\n\nMODO RÁPIDO: faça no máximo 1 ou 2 pesquisas e responda curto e direto (poucas linhas), sem introdução.');
 
     // se a pesquisa no Google ficou sem cota há pouco tempo, nem tenta (economiza tempo e cota)
     let search = Date.now() >= (ai.gSearchPausedUntil || 0);
@@ -1125,13 +1135,17 @@ async function askGemini(question) {
     let result = null, last = null, usedModel = '', usedSearch = search;
     for (let i = 0; i < candidates.length && !result; i++) {
       const model = candidates[i];
-      let s = search, thinking = true, retried = false, triedNoSearch = false;
+      let s = search, thinking = deep ? 'full' : 'low', retried = false, triedNoSearch = false;
       for (;;) {
-        const r = await geminiAttempt({ model, search: s, thinking, system: s ? system : system + NO_SEARCH_NOTE, contents: [...ai.gmsgs, userMsg], view, signal: ctrl.signal, note });
+        const r = await geminiAttempt({ model, search: s, thinking, system: s ? system : system + NO_SEARCH_NOTE, contents: [...ai.gmsgs, userMsg], view, signal: ctrl.signal, note, timeoutMs: deep ? 60000 : 25000 });
         if (r.aborted) throw new Error('aborted');
         // terminou "certo" mas sem texto (ex.: tentou chamar uma ferramenta que não existe): conta como falha
         if (r.ok && !r.gotText && !r.blocked) { r.ok = false; r.status = 'vazio'; r.msg = 'terminou sem texto (finishReason=' + (r.finish || 'nenhum') + ')'; }
-        if (r.ok || r.gotText) { result = r; usedModel = model; usedSearch = s; break; }
+        if (r.ok || r.gotText) {
+          result = r; usedModel = model; usedSearch = s;
+          if (r.ok) ai.gLastGood = { ...ai.gLastGood, [ai.mode]: model };
+          break;
+        }
         last = r;
         attempts.push(`${model}${s ? '' : ' (sem pesquisa)'} → ${r.status}: ${r.msg}`);
         if (r.status === 400 && thinking && /think|thought/i.test(r.msg)) { thinking = false; continue; }
@@ -1166,10 +1180,7 @@ async function askGemini(question) {
     view.steps.forEach(s => s.live = false);
     view.steps = view.steps.filter(s => !s.label.startsWith('🧠'));
     if (usedModel !== candidates[0]) view.steps.push({ label: '✅ Respondido com ' + usedModel });
-    if (!usedSearch) {
-      if (searchAtStart) ai.gSearchPausedUntil = Date.now() + SEARCH_PAUSE_MS;
-      view.notice = 'Resposta SEM pesquisa no Google: a cota de pesquisa da sua chave acabou (o programa tenta de novo em 30 min). As informações podem estar desatualizadas.';
-    }
+    if (!usedSearch && searchAtStart) ai.gSearchPausedUntil = Date.now() + SEARCH_PAUSE_MS;
     if (result.blocked || /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/.test(result.finish)) {
       view.error = 'O Gemini bloqueou essa resposta. Tente reformular a pergunta.';
     } else {
@@ -1179,7 +1190,12 @@ async function askGemini(question) {
       if (view.text) ai.gmsgs = [...ai.gmsgs, userMsg, { role: 'model', parts: [{ text: view.text }] }];
       else view.error ||= 'O Gemini não retornou resposta. Tente de novo.';
     }
-    if (attempts.length || !view.text) view.details = [...attempts, ...log].join('\n');
+    // avisos ficam nos detalhes técnicos para a resposta ficar limpa
+    const warn = usedSearch ? [] : ['⚠️ Resposta SEM pesquisa no Google: a cota de pesquisa da sua chave acabou (o programa tenta de novo em 30 min). As informações podem estar desatualizadas.', ''];
+    // se o modelo mesmo assim abrir a resposta com um "> Aviso: ...", move para os detalhes
+    const lead = view.text.match(/^\s*>[^\n]*(?:aviso|pesquisa)[^\n]*(?:\n>[^\n]*)*\n*/i);
+    if (lead) { warn.push('Aviso do modelo: ' + lead[0].replace(/^\s*>\s?/gm, '').trim(), ''); view.text = view.text.slice(lead[0].length); }
+    if (warn.length || attempts.length || !view.text) view.details = [...warn, ...attempts, ...log].join('\n');
   } catch (err) {
     view.error = aiStream?.aborted ? 'Resposta interrompida.' : err.message;
     view.details = [...attempts, ...log].join('\n');
