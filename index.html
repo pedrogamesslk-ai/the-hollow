@@ -1,0 +1,1493 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Hollow — Notas do Evento</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#07070a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="The Hollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Creepster&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #07070a;
+    --panel: #0f0f14;
+    --panel-2: #15151c;
+    --line: #23232d;
+    --line-soft: #1a1a22;
+    --text: #f1f1f4;
+    --muted: #9a9aa8;
+    --dim: #62626f;
+    --orange: #ff7a1a;
+    --orange-2: #ffa24d;
+    --orange-glow: rgba(255, 122, 26, .35);
+    --purple: #7c3aed;
+    --purple-soft: #2a1747;
+    --green: #22c55e;
+    --red: #ef4444;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Inter, system-ui, sans-serif;
+    font-size: 14px;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+  input, textarea { font: inherit; color: inherit; }
+
+  /* ---------- layout ---------- */
+  .app { display: grid; grid-template-columns: 256px 1fr; grid-template-rows: 76px 1fr 54px; min-height: 100vh; }
+  header {
+    grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; border-bottom: 1px solid var(--line-soft);
+    background: linear-gradient(180deg, #0c0c11, #08080b);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand .pumpkin { font-size: 40px; filter: drop-shadow(0 0 12px var(--orange-glow)); animation: bob 3s ease-in-out infinite; }
+  .brand h1 { margin: 0; font-family: Creepster, cursive; font-weight: 400; font-size: 34px; letter-spacing: 1.5px; color: var(--orange); line-height: 1; text-shadow: 0 0 18px var(--orange-glow); }
+  .brand small { display: block; font-size: 11px; letter-spacing: 1.5px; color: var(--muted); font-weight: 600; margin-top: 2px; }
+  .header-msg { display: flex; align-items: center; gap: 18px; color: var(--muted); font-size: 13px; text-align: center; }
+  .header-msg .ghost { font-size: 26px; animation: float 4s ease-in-out infinite; opacity: .6; }
+  .header-msg .bat { font-size: 26px; animation: flap 2.6s ease-in-out infinite; opacity: .5; }
+
+  aside {
+    border-right: 1px solid var(--line-soft); padding: 22px 14px; position: relative; overflow: hidden;
+    background: linear-gradient(180deg, #0a0a0e 0%, #0d0a0c 60%, #1a0d06 100%);
+  }
+  nav { display: flex; flex-direction: column; gap: 6px; position: relative; z-index: 2; }
+  .nav-btn {
+    display: flex; align-items: center; gap: 14px; padding: 13px 16px; border-radius: 10px;
+    font-size: 15px; color: #d8d8e0; text-align: left; border: 1px solid transparent; transition: .2s;
+  }
+  .nav-btn svg { width: 22px; height: 22px; flex: none; }
+  .nav-btn:hover { background: #15151b; }
+  .nav-btn.active {
+    color: var(--orange); background: linear-gradient(90deg, rgba(255,122,26,.16), rgba(255,122,26,.03));
+    border-color: rgba(255,122,26,.25); box-shadow: inset 3px 0 0 var(--orange);
+  }
+  .nav-btn .count { margin-left: auto; font-size: 12px; color: var(--dim); }
+  .night {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 420px; pointer-events: none; z-index: 1;
+  }
+  .moon {
+    position: absolute; left: 50%; top: 40px; width: 150px; height: 150px; margin-left: -75px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, #ffb066, #f06a12 60%, #b8460a);
+    box-shadow: 0 0 80px 20px rgba(255,110,20,.25);
+  }
+  .night svg.castle { position: absolute; bottom: 70px; left: 0; width: 100%; }
+  .night .tagline {
+    position: absolute; bottom: 26px; left: 0; right: 0; text-align: center; font-family: Creepster, cursive;
+    color: var(--orange); font-size: 24px; transform: rotate(-8deg); text-shadow: 0 0 12px var(--orange-glow);
+  }
+  .night .flybat { position: absolute; font-size: 18px; animation: fly 9s linear infinite; opacity: .8; }
+
+  main { padding: 26px 28px; display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-content: start; min-width: 0; }
+  .col-main { min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+  .col-side { display: flex; flex-direction: column; gap: 18px; }
+
+  footer {
+    grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; border-top: 1px solid var(--line-soft); color: var(--muted); font-size: 13px; background: #08080b;
+  }
+  footer span { display: flex; align-items: center; gap: 10px; }
+
+  .card {
+    background: linear-gradient(180deg, var(--panel), #0b0b10);
+    border: 1px solid var(--line); border-radius: var(--radius); position: relative;
+  }
+
+  /* ---------- progress hero ---------- */
+  .hero { display: grid; grid-template-columns: 190px 1fr; gap: 28px; padding: 22px 28px; overflow: hidden; border-color: #3a2312; }
+  .hero::after {
+    content: ""; position: absolute; right: -10px; top: -10px; width: 160px; height: 160px; opacity: .12; pointer-events: none;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='none' stroke='white' stroke-width='.8'%3E%3Cpath d='M100 0 L0 100 M100 0 L30 100 M100 0 L60 100 M100 0 L0 60 M100 0 L0 30'/%3E%3Cpath d='M85 0 Q90 10 100 15 M68 0 Q78 20 100 32 M50 0 Q65 32 100 50 M32 0 Q52 45 100 68 M15 0 Q40 60 100 85'/%3E%3C/svg%3E") no-repeat center/contain;
+  }
+  .ring-wrap { position: relative; width: 170px; height: 170px; }
+  .ring-wrap svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+  .ring-bg { stroke: #1e1e26; }
+  .ring-fg { stroke: url(#ringGrad); stroke-linecap: round; transition: stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1); filter: drop-shadow(0 0 6px var(--orange-glow)); }
+  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .ring-center b { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+  .ring-center span { color: #d0d0d8; font-size: 14px; margin-top: 2px; }
+  .ring-center i { font-style: normal; font-size: 22px; margin-top: 6px; filter: drop-shadow(0 0 8px var(--orange-glow)); }
+  .hero-info { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .hero-info h2 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: .5px; display: flex; align-items: center; gap: 10px; }
+  .hero-info p { margin: 6px 0 16px; color: #cfcfd8; font-size: 15px; }
+  .hero-info p b { color: var(--orange-2); }
+  .bar-row { display: flex; align-items: center; gap: 14px; }
+  .bar { flex: 1; height: 12px; border-radius: 99px; background: #1b1b22; border: 1px solid #2a2a33; overflow: hidden; }
+  .bar > div { height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, #ff5a00, var(--orange-2)); box-shadow: 0 0 12px var(--orange-glow); transition: width .9s cubic-bezier(.2,.8,.2,1); }
+  .bar-row .frac { font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 20px; }
+  .stat { display: flex; align-items: center; gap: 12px; padding: 0 14px; border-left: 1px solid var(--line); }
+  .stat:first-child { border-left: 0; padding-left: 0; }
+  .stat svg { width: 28px; height: 28px; flex: none; color: #c9c9d3; }
+  .stat b { display: block; font-size: 18px; }
+  .stat small { color: var(--muted); font-size: 13px; }
+  .stat.ok svg { color: var(--green); }
+
+  /* ---------- tabs + grid ---------- */
+  .board { padding: 0; }
+  .board-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: -1px; position: relative; z-index: 1; }
+  .tabs { display: flex; gap: 6px; }
+  .tab {
+    display: flex; align-items: center; gap: 10px; padding: 14px 26px; border-radius: 12px 12px 0 0;
+    background: #0e0e13; border: 1px solid var(--line); border-bottom: 0; color: #d2d2da; font-size: 15px; font-weight: 500; transition: .2s;
+  }
+  .tab svg { width: 22px; height: 22px; }
+  .tab:hover { color: #fff; }
+  .tab.active { color: var(--orange); background: var(--panel); border-color: #4a2a12; box-shadow: inset 0 -3px 0 var(--orange); font-weight: 600; }
+  .search {
+    display: flex; align-items: center; gap: 8px; background: #0e0e13; border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 12px; margin-bottom: 8px; min-width: 220px;
+  }
+  .search input { background: none; border: 0; outline: none; width: 100%; }
+  .search svg { width: 16px; height: 16px; color: var(--dim); }
+  .grid-wrap { padding: 20px; border-radius: 0 var(--radius) var(--radius) var(--radius); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+  .empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 40px 0; }
+  .empty div { font-size: 40px; margin-bottom: 8px; }
+
+  .game {
+    position: relative; display: grid; grid-template-columns: 68px 1fr 18px; gap: 4px 16px; padding: 16px;
+    background: #101016; border: 1px solid var(--line); border-radius: 12px; cursor: pointer;
+    transition: transform .2s, border-color .2s, box-shadow .2s; animation: pop .35s both;
+  }
+  .game:hover { transform: translateY(-3px); border-color: #4a2a12; box-shadow: 0 10px 28px -12px var(--orange-glow); }
+  .game.done { border-color: #2d3a24; background: linear-gradient(180deg, #11140f, #0f1012); }
+  .game .icon {
+    grid-row: span 2; width: 68px; height: 68px; border-radius: 12px; display: grid; place-items: center; font-size: 34px;
+    border: 1px solid rgba(255,255,255,.08); box-shadow: inset 0 0 20px rgba(0,0,0,.5);
+  }
+  .game h3 { margin: 4px 0 0; font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .game .chev { color: var(--dim); align-self: start; margin-top: 4px; width: 18px; height: 18px; }
+  .check {
+    display: inline-flex; align-items: center; gap: 10px; color: var(--muted); font-size: 14px; align-self: center; padding: 4px 0; width: fit-content;
+  }
+  .check .box {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid #4a4a56; display: grid; place-items: center; transition: .2s;
+  }
+  .check .box svg { width: 14px; height: 14px; opacity: 0; transform: scale(.4); transition: .2s; }
+  .check:hover .box { border-color: var(--orange); }
+  .game.done .check { color: var(--green); }
+  .game.done .check .box { background: var(--green); border-color: var(--green); box-shadow: 0 0 12px rgba(34,197,94,.4); }
+  .game.done .check .box svg { opacity: 1; transform: scale(1); }
+  .game .mini { grid-column: 1 / -1; margin-top: 10px; }
+  .mini-top { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+  .mini .bar { height: 7px; border: 0; }
+  .game:not(.done) .mini .bar > div { width: 0 !important; }
+  .game .note-dot { position: absolute; top: 10px; right: 36px; font-size: 12px; opacity: .8; }
+  .tag-main { position: absolute; top: -8px; left: 14px; font-size: 10px; font-weight: 700; letter-spacing: 1px; padding: 2px 8px; border-radius: 99px; background: var(--orange); color: #1a0a00; }
+
+  /* ---------- side panel ---------- */
+  .motivate {
+    padding: 22px; border-color: #4b2f7a; overflow: hidden;
+    background: radial-gradient(circle at 100% 100%, #3b1f6b 0%, transparent 60%), linear-gradient(160deg, #150f22, #0e0b16);
+  }
+  .motivate h4 { margin: 0 0 8px; font-size: 20px; display: flex; align-items: center; gap: 10px; }
+  .motivate h4 span { font-size: 30px; }
+  .motivate p { margin: 0 0 0 44px; color: #cfc8e0; font-size: 13.5px; line-height: 1.5; }
+  .motivate .g { position: absolute; right: 12px; bottom: 6px; font-size: 30px; animation: float 4s ease-in-out infinite; }
+  .panel { padding: 18px; }
+  .panel h5 { margin: 0 0 14px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+  .panel h5 svg { width: 22px; height: 22px; color: var(--orange); }
+  .filter {
+    width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 9px; border: 1px solid var(--line);
+    background: #121218; margin-bottom: 10px; font-size: 14px; transition: .2s;
+  }
+  .filter:last-child { margin-bottom: 0; }
+  .filter svg { width: 20px; height: 20px; }
+  .filter:hover { border-color: #3a3a46; }
+  .filter.active { border: 2px solid var(--orange); color: var(--orange); background: rgba(255,122,26,.08); box-shadow: 0 0 18px -6px var(--orange-glow); }
+  .filter .n { margin-left: auto; color: var(--dim); font-size: 12px; }
+  .list-row { display: flex; align-items: center; gap: 12px; padding: 9px 2px; color: #d6d6de; }
+  .list-row svg { width: 20px; height: 20px; color: #b0b0bb; }
+  .list-row b { margin-left: auto; font-weight: 600; }
+  .list-row.ok, .list-row.ok svg { color: var(--green); }
+  .sep { height: 1px; background: var(--line); margin: 8px 0; }
+  .tip { padding: 18px; display: flex; gap: 14px; border-color: #4b2f7a; background: linear-gradient(160deg, #150f22, #0e0b16); font-size: 13px; color: #d4cfe0; line-height: 1.5; }
+  .tip span { font-size: 26px; }
+
+  .mini-rings { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .mini-ring { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 10px; background: #121218; border: 1px solid var(--line); }
+  .mini-ring svg { width: 44px; height: 44px; transform: rotate(-90deg); flex: none; }
+  .mini-ring circle { transition: stroke-dashoffset .9s cubic-bezier(.2,.8,.2,1); }
+  .mini-ring b { display: block; font-size: 16px; }
+  .mini-ring small { color: var(--muted); font-size: 11.5px; }
+
+  /* ---------- settings ---------- */
+  .settings { padding: 26px; display: flex; flex-direction: column; gap: 22px; }
+  .settings h2 { margin: 0; font-size: 22px; display: flex; align-items: center; gap: 10px; }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px; border-radius: 12px; background: #111117; border: 1px solid var(--line); flex-wrap: wrap; }
+  .set-row h4 { margin: 0 0 4px; font-size: 15px; }
+  .set-row p { margin: 0; color: var(--muted); font-size: 13px; }
+  .seg { display: flex; background: #0a0a0e; border: 1px solid var(--line); border-radius: 10px; padding: 4px; }
+  .seg button { padding: 8px 14px; border-radius: 7px; color: var(--muted); font-size: 13px; }
+  .seg button.active { background: var(--orange); color: #1a0a00; font-weight: 700; }
+  .btn { padding: 10px 18px; border-radius: 9px; border: 1px solid var(--line); background: #17171e; font-weight: 600; font-size: 13px; transition: .2s; }
+  .btn:hover { border-color: var(--orange); color: var(--orange); }
+  .btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .btn.primary { background: var(--orange); color: #1a0a00; border-color: var(--orange); }
+  .btn.primary:hover { background: var(--orange-2); color: #1a0a00; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+  .sec-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; }
+  .sec-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 9px; background: #0d0d12; border: 1px solid var(--line-soft); font-size: 13px; }
+  .sec-item .e { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 16px; flex: none; }
+  .sec-item .s { margin-left: auto; font-size: 11px; color: var(--dim); }
+  .sec-item.done .s { color: var(--green); }
+
+  /* ---------- modal ---------- */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7); backdrop-filter: blur(4px); display: none; place-items: center; z-index: 50; padding: 16px;
+  }
+  .modal-bg.open { display: grid; animation: fade .2s; }
+  .modal { width: min(520px, 100%); padding: 26px; border-color: #4a2a12; animation: pop .25s; box-shadow: 0 30px 80px -20px var(--orange-glow); }
+  .modal-head { display: flex; gap: 16px; align-items: center; margin-bottom: 18px; }
+  .modal-head .icon { width: 64px; height: 64px; border-radius: 14px; display: grid; place-items: center; font-size: 32px; border: 1px solid rgba(255,255,255,.08); }
+  .modal-head h3 { margin: 0 0 4px; font-size: 20px; }
+  .modal-head small { color: var(--muted); }
+  .modal-head .x { margin-left: auto; align-self: start; color: var(--muted); font-size: 22px; line-height: 1; padding: 4px 8px; border-radius: 6px; }
+  .modal-head .x:hover { background: #1c1c24; color: #fff; }
+  .modal label { display: block; color: var(--muted); font-size: 12px; font-weight: 600; letter-spacing: .8px; margin: 16px 0 8px; text-transform: uppercase; }
+  .modal textarea {
+    width: 100%; min-height: 130px; resize: vertical; padding: 12px 14px; border-radius: 10px; background: #0a0a0e; border: 1px solid var(--line); outline: none; line-height: 1.5;
+  }
+  .modal textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,122,26,.15); }
+  .modal .meta { color: var(--dim); font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .modal .actions { display: flex; justify-content: space-between; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+
+  /* ---------- toast + confetti ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 74px; transform: translate(-50%, 30px); opacity: 0; z-index: 60;
+    background: #16161d; border: 1px solid #4a2a12; padding: 12px 20px; border-radius: 12px; display: flex; gap: 10px; align-items: center;
+    box-shadow: 0 14px 40px -10px var(--orange-glow); transition: .3s; pointer-events: none; font-weight: 500;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .spark { position: fixed; pointer-events: none; z-index: 70; font-size: 18px; animation: burst .9s ease-out forwards; }
+
+  /* ---------- ajuda (IA) ---------- */
+  .chat { display: flex; flex-direction: column; height: calc(100vh - 76px - 54px - 52px); min-height: 540px; overflow: hidden; }
+  .chat-head { display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .chat-head .orb { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 24px; background: radial-gradient(circle at 35% 30%, #6d3fc4, #1d0f38); box-shadow: 0 0 22px rgba(124,58,237,.45); animation: float 4s ease-in-out infinite; }
+  .chat-head h2 { margin: 0; font-size: 18px; }
+  .chat-head small { color: var(--muted); font-size: 12.5px; }
+  .chat-head .right { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .chat-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth; }
+  .chat-body::-webkit-scrollbar { width: 8px; }
+  .chat-body::-webkit-scrollbar-thumb { background: #2a2a34; border-radius: 8px; }
+  .msg { display: flex; gap: 12px; max-width: 100%; animation: pop .25s both; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { background: linear-gradient(135deg, #ff7a1a, #e2560a); color: #1a0a00; font-weight: 500; border-radius: 14px 14px 4px 14px; max-width: 75%; }
+  .msg .avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 18px; background: radial-gradient(circle at 35% 30%, #6d3fc4, #1d0f38); }
+  .msg.ai .bubble { background: #121219; border: 1px solid var(--line); border-radius: 4px 14px 14px 14px; min-width: 0; flex: 1; max-width: 860px; }
+  .bubble { padding: 12px 16px; line-height: 1.6; overflow-wrap: anywhere; }
+  .steps { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .step { font-size: 12px; padding: 4px 10px; border-radius: 99px; background: #1b1530; border: 1px solid #3b2a63; color: #c9b8f0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .step.live { animation: pulse 1.2s ease-in-out infinite; }
+  .think-btn { font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 2px 0; }
+  .think-btn:hover { color: var(--orange-2); }
+  .think { font-size: 12.5px; color: #a9a3bd; border-left: 2px solid #3b2a63; padding: 4px 0 4px 12px; margin-bottom: 10px; white-space: pre-wrap; max-height: 220px; overflow-y: auto; }
+  .typing span { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--orange); margin-right: 4px; animation: pulse 1s infinite; }
+  .typing span:nth-child(2) { animation-delay: .15s; } .typing span:nth-child(3) { animation-delay: .3s; }
+  .err { color: #fca5a5; font-size: 13px; margin-top: 6px; }
+  .sources { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 12.5px; }
+  .sources b { color: var(--muted); font-weight: 600; display: block; margin-bottom: 6px; }
+  .sources a { display: block; color: var(--orange-2); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 2px 0; }
+  .sources a:hover { text-decoration: underline; }
+  .md p { margin: 0 0 10px; } .md p:last-child { margin-bottom: 0; }
+  .md h1, .md h2, .md h3, .md h4 { margin: 14px 0 8px; font-size: 15.5px; color: var(--orange-2); }
+  .md ul, .md ol { margin: 0 0 10px; padding-left: 22px; } .md li { margin: 3px 0; }
+  .md code { background: #0a0a0e; border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; font-size: 12.5px; }
+  .md pre { background: #0a0a0e; border: 1px solid var(--line); padding: 12px; border-radius: 9px; overflow-x: auto; }
+  .md pre code { border: 0; padding: 0; }
+  .md a { color: var(--orange-2); }
+  .md strong { color: #fff; }
+  .chat-empty { margin: auto; text-align: center; max-width: 520px; color: var(--muted); }
+  .chat-empty .big { font-size: 54px; margin-bottom: 6px; animation: float 4s ease-in-out infinite; }
+  .chat-empty h3 { color: var(--text); margin: 0 0 6px; font-size: 18px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 18px; }
+  .chip { padding: 9px 14px; border-radius: 99px; border: 1px solid var(--line); background: #121218; font-size: 13px; color: #d6d6de; transition: .2s; }
+  .chip:hover { border-color: var(--orange); color: var(--orange); }
+  .chat-input { display: flex; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line); align-items: flex-end; }
+  .chat-input textarea { flex: 1; resize: none; min-height: 46px; max-height: 160px; padding: 12px 14px; border-radius: 12px; background: #0a0a0e; border: 1px solid var(--line); outline: none; line-height: 1.45; }
+  .chat-input textarea:focus { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(255,122,26,.15); }
+  .send { width: 46px; height: 46px; border-radius: 12px; background: var(--orange); color: #1a0a00; display: grid; place-items: center; flex: none; transition: .2s; }
+  .send:hover { background: var(--orange-2); }
+  .send.stop { background: #2a1a1a; color: #fca5a5; border: 1px solid #5a2a2a; }
+  .send svg { width: 20px; height: 20px; }
+  .key-card { margin: auto; max-width: 520px; padding: 24px; border-radius: 14px; background: #111117; border: 1px solid #4b2f7a; }
+  .key-card h3 { margin: 0 0 8px; }
+  .key-card p { color: var(--muted); font-size: 13px; line-height: 1.55; margin: 0 0 14px; }
+  .key-card a { color: var(--orange-2); }
+  .key-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .key-row input { flex: 1; min-width: 200px; padding: 10px 12px; border-radius: 9px; background: #0a0a0e; border: 1px solid var(--line); outline: none; }
+  .key-row input:focus { border-color: var(--orange); }
+
+  @keyframes pulse { 50% { opacity: .35; } }
+  @keyframes bob { 50% { transform: translateY(-4px) rotate(-4deg); } }
+  @keyframes float { 50% { transform: translateY(-8px); } }
+  @keyframes flap { 50% { transform: translateY(-5px) scaleX(.85); } }
+  @keyframes fly { from { transform: translate(-30px, 0); } 50% { transform: translate(140px, -30px); } to { transform: translate(300px, 10px); } }
+  @keyframes pop { from { opacity: 0; transform: scale(.96) translateY(6px); } }
+  @keyframes fade { from { opacity: 0; } }
+  @keyframes burst { to { transform: translate(var(--dx), var(--dy)) rotate(var(--r)); opacity: 0; } }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 1200px) {
+    main { grid-template-columns: 1fr; }
+    .col-side { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  }
+  @media (max-width: 820px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto auto 1fr auto; }
+    header { padding: 14px 16px; }
+    .header-msg { display: none; }
+    aside { padding: 10px 16px; border-right: 0; border-bottom: 1px solid var(--line-soft); }
+    nav { flex-direction: row; overflow-x: auto; }
+    .nav-btn { white-space: nowrap; padding: 10px 12px; font-size: 14px; }
+    .nav-btn .count { display: none; }
+    .night { display: none; }
+    main { padding: 16px; }
+    .hero { grid-template-columns: 1fr; justify-items: center; padding: 20px 16px; text-align: center; }
+    .hero-info h2 { justify-content: center; }
+    .stats { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .stat { border-left: 0; padding: 0; }
+    .tab { padding: 12px 14px; font-size: 13px; }
+    .search { width: 100%; min-width: 0; }
+    .grid-wrap { padding: 14px; border-radius: var(--radius); }
+    footer { padding: 12px 16px; flex-direction: column; gap: 6px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffb066"/><stop offset="1" stop-color="#ff5a00"/></linearGradient>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"/></symbol>
+    <symbol id="i-pad" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10a5 5 0 0 1 5 5v2.5a3.5 3.5 0 0 1-6.3 2.1L14.5 15h-5l-1.2 1.6A3.5 3.5 0 0 1 2 14.5V12a5 5 0 0 1 5-5z"/><path d="M7 10v4M5 12h4"/><circle cx="16" cy="11" r=".6" fill="currentColor"/><circle cx="18" cy="13" r=".6" fill="currentColor"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-checkbox" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="currentColor"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#0b0b10" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18M8 4v16"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5" stroke-linecap="round"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-8-6 16-2.5-6.5z"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+    <symbol id="i-search"viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <header>
+    <div class="brand">
+      <span class="pumpkin">🎃</span>
+      <div><h1>THE HOLLOW</h1><small>EVENTO DO ROBLOX</small></div>
+    </div>
+    <div class="header-msg">
+      <span class="ghost">👻</span>
+      <span>Complete os jogos, ganhe recompensas e<br>faça parte do The Hollow!</span>
+      <span class="bat">🦇</span>
+    </div>
+  </header>
+
+  <aside>
+    <nav>
+      <button class="nav-btn active" data-view="home"><svg><use href="#i-home"/></svg>Início</button>
+      <button class="nav-btn" data-view="main"><svg><use href="#i-star"/></svg>Jogos Principais<span class="count" id="navMain"></span></button>
+      <button class="nav-btn" data-view="sec"><svg><use href="#i-pad"/></svg>Jogos Secundários<span class="count" id="navSec"></span></button>
+      <button class="nav-btn" data-view="ajuda"><svg><use href="#i-chat"/></svg>Ajuda<span class="count">IA</span></button>
+      <button class="nav-btn" data-view="settings"><svg><use href="#i-gear"/></svg>Configurações</button>
+    </nav>
+    <div class="night">
+      <div class="moon"></div>
+      <span class="flybat" style="top:30px;left:10px">🦇</span>
+      <span class="flybat" style="top:80px;left:-20px;animation-delay:-4s;font-size:14px">🦇</span>
+      <svg class="castle" viewBox="0 0 256 200" preserveAspectRatio="xMidYMax meet">
+        <g fill="#060608">
+          <path d="M0 200 V150 Q20 140 40 150 L40 120 L50 120 L50 100 L45 100 L55 70 L65 100 L60 100 L60 120 L80 120 L80 80 L72 80 L90 30 L108 80 L100 80 L100 115 L120 115 L120 60 L114 60 L128 20 L142 60 L136 60 L136 115 L150 115 L150 90 L144 90 L158 55 L172 90 L166 90 L166 130 L190 130 Q220 140 256 150 V200 Z"/>
+          <path d="M10 200 L14 160 Q6 150 2 140 M14 160 Q20 148 28 144" stroke="#060608" stroke-width="3" fill="none"/>
+          <path d="M240 200 L236 150 Q244 138 252 134 M236 150 Q228 140 220 138 M238 165 Q248 160 256 162" stroke="#060608" stroke-width="3" fill="none"/>
+        </g>
+        <g fill="#ff8a2a" opacity=".85">
+          <rect x="86" y="90" width="4" height="7" rx="1"/><rect x="94" y="90" width="4" height="7" rx="1"/>
+          <rect x="124" y="70" width="4" height="7" rx="1"/><rect x="124" y="90" width="4" height="7" rx="1"/>
+          <rect x="155" y="100" width="4" height="6" rx="1"/><rect x="88" y="130" width="4" height="7" rx="1"/>
+          <rect x="140" y="130" width="4" height="7" rx="1"/><rect x="53" y="128" width="3" height="6" rx="1"/>
+        </g>
+      </svg>
+      <div class="tagline">The Hollow<br>te espera... 🎃</div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="col-main" id="colMain"></div>
+    <div class="col-side" id="colSide"></div>
+  </main>
+
+  <footer>
+    <span>🎃 O evento não dura para sempre...</span>
+    <span id="footRight">Boa sorte! 🎃</span>
+  </footer>
+</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="card modal" id="modal"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const GAMES = [
+  // 9 jogos principais
+  { id: 'demonology',   name: 'Demonology',             icon: '👻', type: 'main', c: ['#3b1a6b', '#12081f'] },
+  { id: 'doors',        name: 'DOORS',                  icon: '🚪', type: 'main', c: ['#3a2a14', '#120c06'] },
+  { id: '99nights',     name: '99 Nights in the Forest',icon: '🌲', type: 'main', c: ['#163a22', '#06120a'] },
+  { id: 'shawarma',     name: 'Scary Shawarma Kiosk',   icon: '🌯', type: 'main', c: ['#5a2a0c', '#1a0c04'] },
+  { id: 'overseer',     name: 'The Overseer',           icon: '👁️', type: 'main', c: ['#4a0c10', '#140406'] },
+  { id: 'animalhosp',   name: 'Animal Hospital',        icon: '🏥', type: 'main', c: ['#0f3a4a', '#051218'] },
+  { id: 'piggy',        name: 'Piggy',                  icon: '🐷', type: 'main', c: ['#5a1f3a', '#1a0812'] },
+  { id: 'mimic',        name: 'The Mimic',              icon: '🎭', type: 'main', c: ['#2a1414', '#0a0505'] },
+  { id: 'dandy',        name: "Dandy's World",          icon: '🌼', type: 'main', c: ['#4a3a0c', '#141004'] },
+  // jogos secundários
+  { id: 'speedkb',      name: '+1 Speed Keyboard Escape',       icon: '⌨️', type: 'sec', c: ['#1f3a14', '#081206'] },
+  { id: 'aooni',        name: 'Aooni Nightmare',                icon: '😱', type: 'sec', c: ['#1f1a5a', '#080614'] },
+  { id: 'banana',       name: 'Banana Eats',                    icon: '🍌', type: 'sec', c: ['#4a4a0c', '#121204'] },
+  { id: 'basketball',   name: 'Basketball Legends',             icon: '🏀', type: 'sec', c: ['#5a2a0c', '#180a04'] },
+  { id: 'bear',         name: 'Bear',                           icon: '🐻', type: 'sec', c: ['#4a2a1a', '#140a06'] },
+  { id: 'leaves',       name: 'Clean All the Leaves',           icon: '🍂', type: 'sec', c: ['#5a3a0c', '#1a1004'] },
+  { id: 'colordie',     name: 'Color or Die',                   icon: '🎨', type: 'sec', c: ['#4a0c4a', '#140414'] },
+  { id: 'sonaria',      name: 'Creatures of Sonaria',           icon: '🐉', type: 'sec', c: ['#0c4a2a', '#04140a'] },
+  { id: 'deadrails',    name: 'Dead Rails',                     icon: '🚂', type: 'sec', c: ['#3a2a1a', '#120a06'] },
+  { id: 'dti',          name: 'Dress to Impress',               icon: '👗', type: 'sec', c: ['#5a1a4a', '#180614'] },
+  { id: 'duckduck',     name: 'Duck Duck',                      icon: '🦆', type: 'sec', c: ['#1a3a4a', '#061218'] },
+  { id: 'evade',        name: 'Evade',                          icon: '🏃', type: 'sec', c: ['#1a4a1a', '#061406'] },
+  { id: 'fisch',        name: 'Fisch',                          icon: '🎣', type: 'sec', c: ['#0c3a5a', '#04101a'] },
+  { id: 'flee',         name: 'Flee the Facility',              icon: '🔨', type: 'sec', c: ['#5a0c0c', '#180404'] },
+  { id: 'gag2',         name: 'Grow a Garden 2',                icon: '🌱', type: 'sec', c: ['#1f4a0c', '#081404'] },
+  { id: 'homealone',    name: 'Home Alone: Anomalies',          icon: '🏠', type: 'sec', c: ['#3a1a0c', '#120804'] },
+  { id: 'hunted',       name: 'Hunted',                         icon: '🐒', type: 'sec', c: ['#0c3a1a', '#041206'] },
+  { id: 'moomoo',       name: 'Moo Moo Mystery',                icon: '🐄', type: 'sec', c: ['#2a2a3a', '#0a0a12'] },
+  { id: 'murderduels',  name: 'Murder Duels',                   icon: '🔪', type: 'sec', c: ['#1a2a5a', '#060a18'] },
+  { id: 'mvs',          name: 'Murderers vs. Sheriffs',         icon: '🤠', type: 'sec', c: ['#2a3a5a', '#0a1018'] },
+  { id: 'petapeta',     name: 'Petapeta',                       icon: '👹', type: 'sec', c: ['#4a0c1a', '#140406'] },
+  { id: 'needle',       name: 'Search for the Needle',          icon: '🔍', type: 'sec', c: ['#3a3a0c', '#121204'] },
+  { id: 'sellalemon',   name: 'Sell a Lemon',                   icon: '🍋', type: 'sec', c: ['#4a4a0c', '#141404'] },
+  { id: 'sonariahorror',name: 'Sonaria Horror Escape',          icon: '🦖', type: 'sec', c: ['#2a0c4a', '#0a0414'] },
+  { id: 'stealegg',     name: 'Steal an Egg',                   icon: '🥚', type: 'sec', c: ['#4a3a1a', '#141006'] },
+  { id: 'megastore',    name: 'Survive Overnight in a Mega Store', icon: '🛒', type: 'sec', c: ['#0c4a4a', '#041414'] },
+  { id: 'stk',          name: 'Survive the Killer',             icon: '🪓', type: 'sec', c: ['#4a0c0c', '#140404'] },
+  { id: 'theblock',     name: 'The Block',                      icon: '🟦', type: 'sec', c: ['#0c2a6b', '#040a1f'] },
+  { id: 'tds',          name: 'Tower Defense Simulator',        icon: '🏰', type: 'sec', c: ['#2a1a5a', '#0a0618'] },
+  { id: 'violence',     name: 'Violence District',              icon: '🩸', type: 'sec', c: ['#3a0c1a', '#120406'] },
+  { id: 'bloxburg',     name: 'Welcome to Bloxburg',            icon: '🏡', type: 'sec', c: ['#1a3a5a', '#061018'] },
+];
+const byId = Object.fromEntries(GAMES.map(g => [g.id, g]));
+
+const STORE_KEY = 'hollow-notes-v1';
+let state = { done: {}, doneAt: {}, notes: {}, scope: 'all' };
+try { Object.assign(state, JSON.parse(localStorage.getItem(STORE_KEY)) || {}); } catch {}
+const save = () => { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {} };
+
+let ui = { view: 'home', tab: 'main', filter: 'all', q: '' };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const icon = (id, cls = '') => `<svg class="${cls}"><use href="#${id}"/></svg>`;
+const listOf = type => GAMES.filter(g => g.type === type);
+const doneIn = list => list.filter(g => state.done[g.id]).length;
+const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+
+function totals() {
+  const main = listOf('main'), sec = listOf('sec');
+  const scoped = state.scope === 'main' ? main : GAMES;
+  return { main, sec, mainDone: doneIn(main), secDone: doneIn(sec), scoped, scopedDone: doneIn(scoped) };
+}
+
+function motivation(p) {
+  if (p === 100) return ['Lenda do Hollow!', 'Você completou tudo! Todas as recompensas são suas. 🏆', '🏆'];
+  if (p >= 75)   return ['Quase lá!', 'Faltam poucos jogos para dominar o The Hollow!', '🔥'];
+  if (p >= 40)   return ['Continue assim!', 'Você está mais perto das recompensas do evento!', '🎃'];
+  if (p > 0)     return ['Bom começo!', 'Cada jogo concluído te deixa mais forte. Segue!', '🕯️'];
+  return ['Hora de começar!', 'Escolha um jogo e comece sua jornada no The Hollow.', '💀'];
+}
+
+/* ---------- render ---------- */
+function render() {
+  const t = totals();
+  $('#navMain').textContent = `${t.mainDone}/${t.main.length}`;
+  $('#navSec').textContent = `${t.secDone}/${t.sec.length}`;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === ui.view));
+  $('#colMain').innerHTML = ui.view === 'settings' ? renderSettings(t) : ui.view === 'ajuda' ? renderChat() : renderHero(t) + renderBoard(t);
+  $('#colSide').innerHTML = renderSide(t);
+  $('#footRight').textContent = t.scopedDone === t.scoped.length ? 'Evento concluído! 🏆' : 'Boa sorte! 🎃';
+  requestAnimationFrame(animateBars);
+  if (ui.view === 'ajuda') { paintChat(true); }
+}
+
+function renderHero(t) {
+  const p = pct(t.scopedDone, t.scoped.length);
+  const C = 2 * Math.PI * 70;
+  return `
+  <section class="card hero">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 170 170">
+        <circle class="ring-bg" cx="85" cy="85" r="70" fill="none" stroke-width="12"/>
+        <circle class="ring-fg" cx="85" cy="85" r="70" fill="none" stroke-width="12"
+          stroke-dasharray="${C}" stroke-dashoffset="${C}" data-offset="${C * (1 - p / 100)}"/>
+      </svg>
+      <div class="ring-center"><b>${p}%</b><span>Concluído</span><i>🎃</i></div>
+    </div>
+    <div class="hero-info">
+      <h2><span>🎃</span> PROGRESSO GERAL</h2>
+      <p>Você já completou <b>${t.scopedDone}</b> de ${t.scoped.length} jogos${state.scope === 'main' ? ' principais' : ''}!</p>
+      <div class="bar-row"><div class="bar"><div data-w="${p}"></div></div><span class="frac">${t.scopedDone} / ${t.scoped.length}</span></div>
+      <div class="stats">
+        <div class="stat">${icon('i-star')}<div><b>${t.mainDone}/${t.main.length}</b><small>Principais</small></div></div>
+        <div class="stat">${icon('i-pad')}<div><b>${t.secDone}/${t.sec.length}</b><small>Secundários</small></div></div>
+        <div class="stat ok">${icon('i-checkbox')}<div><b>${t.scopedDone}</b><small>Concluídos</small></div></div>
+        <div class="stat">${icon('i-clock')}<div><b>${t.scoped.length - t.scopedDone}</b><small>Pendentes</small></div></div>
+      </div>
+    </div>
+  </section>`;
+}
+
+function renderBoard(t) {
+  const tab = ui.view === 'main' ? 'main' : ui.view === 'sec' ? 'sec' : ui.tab;
+  const q = ui.q.trim().toLowerCase();
+  const list = listOf(tab)
+    .filter(g => ui.filter === 'all' || (ui.filter === 'done') === !!state.done[g.id])
+    .filter(g => !q || g.name.toLowerCase().includes(q));
+  const tabBtn = (k, label, ic, n) =>
+    `<button class="tab ${tab === k ? 'active' : ''}" data-tab="${k}">${icon(ic)}${label} (${n})</button>`;
+  return `
+  <section class="board">
+    <div class="board-top">
+      <div class="tabs">
+        ${tabBtn('main', 'Jogos Principais', 'i-star', t.main.length)}
+        ${tabBtn('sec', 'Jogos Secundários', 'i-pad', t.sec.length)}
+      </div>
+      <label class="search">${icon('i-search')}<input id="search" placeholder="Buscar jogo..." value="${esc(ui.q)}"></label>
+    </div>
+    <div class="card grid-wrap">
+      <div class="grid">
+        ${list.length ? list.map(gameCard).join('') :
+          `<div class="empty"><div>🕸️</div>${q ? 'Nenhum jogo encontrado.' : ui.filter === 'done' ? 'Nenhum jogo concluído ainda.' : 'Tudo concluído aqui! 🎉'}</div>`}
+      </div>
+    </div>
+  </section>`;
+}
+
+function gameCard(g, i) {
+  const d = !!state.done[g.id];
+  return `
+  <article class="game ${d ? 'done' : ''}" data-open="${g.id}" style="animation-delay:${i * 25}ms">
+    <div class="icon" style="background:radial-gradient(circle at 30% 25%, ${g.c[0]}, ${g.c[1]})">${g.icon}</div>
+    <h3 title="${esc(g.name)}">${esc(g.name)}</h3>
+    ${icon('i-chev', 'chev')}
+    <button class="check" data-toggle="${g.id}" title="Marcar como concluído">
+      <span class="box">${icon('i-check')}</span>${d ? 'Concluído' : 'Pendente'}
+    </button>
+    ${state.notes[g.id] ? '<span class="note-dot" title="Tem anotação">📝</span>' : ''}
+    <div class="mini">
+      <div class="mini-top"><span>${d ? 100 : 0}%</span><span>100%</span></div>
+      <div class="bar"><div data-w="${d ? 100 : 0}"></div></div>
+    </div>
+  </article>`;
+}
+
+function miniRing(label, a, b, color) {
+  const C = 2 * Math.PI * 18, p = pct(a, b);
+  return `<div class="mini-ring">
+    <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" fill="none" stroke="#1e1e26" stroke-width="5"/>
+      <circle cx="22" cy="22" r="18" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"
+        stroke-dasharray="${C}" stroke-dashoffset="${C}" data-offset="${C * (1 - p / 100)}"/></svg>
+    <div><b>${p}%</b><small>${label}</small></div></div>`;
+}
+
+function renderSide(t) {
+  const p = pct(t.scopedDone, t.scoped.length);
+  const [title, msg, emo] = motivation(p);
+  const filters = ui.view === 'settings' || ui.view === 'ajuda' ? '' : `
+  <section class="card panel">
+    <h5>${icon('i-filter')}Filtros</h5>
+    ${[['all', 'Todos', 'i-grid'], ['done', 'Concluídos', 'i-checkbox'], ['pending', 'Pendentes', 'i-clock']].map(([k, l, ic]) =>
+      `<button class="filter ${ui.filter === k ? 'active' : ''}" data-filter="${k}">${icon(ic)}${l}</button>`).join('')}
+  </section>`;
+  return `
+  <section class="card motivate">
+    <h4><span>${emo}</span>${title}</h4>
+    <p>${msg}</p>
+    <span class="g">👻</span>
+  </section>
+  ${filters}
+  <section class="card panel">
+    <h5>${icon('i-list')}Lista do Evento</h5>
+    <div class="mini-rings">${miniRing('Principais', t.mainDone, t.main.length, '#ff7a1a')}${miniRing('Secundários', t.secDone, t.sec.length, '#a78bfa')}</div>
+    <div class="sep" style="margin-top:14px"></div>
+    <div class="list-row">${icon('i-star')}Jogos Principais<b>${t.main.length}</b></div>
+    <div class="list-row">${icon('i-pad')}Jogos Secundários<b>${t.sec.length}</b></div>
+    <div class="sep"></div>
+    <div class="list-row">${icon('i-pad')}Total de Jogos<b>${GAMES.length}</b></div>
+    <div class="list-row ok">${icon('i-checkbox')}Concluídos<b>${t.mainDone + t.secDone}</b></div>
+    <div class="list-row">${icon('i-clock')}Pendentes<b>${GAMES.length - t.mainDone - t.secDone}</b></div>
+  </section>
+  <section class="card tip"><span>🎃</span><div><b>Dica:</b> clique em um jogo para abrir as anotações dele. Dúvidas sobre o evento? Pergunte ao Oráculo na aba <b>Ajuda</b>.</div></section>`;
+}
+
+function renderSettings(t) {
+  return `
+  <section class="card settings">
+    <h2>${icon('i-gear')} Configurações</h2>
+    <div class="set-row">
+      <div><h4>O progresso geral conta...</h4><p>Escolha se a porcentagem principal considera todos os ${GAMES.length} jogos ou só os ${t.main.length} principais.</p></div>
+      <div class="seg">
+        <button data-scope="all" class="${state.scope === 'all' ? 'active' : ''}">Todos os jogos</button>
+        <button data-scope="main" class="${state.scope === 'main' ? 'active' : ''}">Só principais</button>
+      </div>
+    </div>
+    <div class="set-row">
+      <div><h4>IA da aba Ajuda</h4><p>Escolha qual inteligência artificial o Oráculo usa.</p></div>
+      <div class="seg">
+        <button data-ai-provider="gemini" class="${ai.provider === 'gemini' ? 'active' : ''}">Gemini</button>
+        <button data-ai-provider="claude" class="${ai.provider === 'claude' ? 'active' : ''}">Claude</button>
+      </div>
+    </div>
+    <div class="set-row">
+      <div><h4>Chave da API</h4><p>
+        Gemini: ${ai.gkey ? '✅ salva (' + esc(ai.gkey.slice(0, 8)) + '…)' : '— nenhuma'} ·
+        Claude: ${ai.key ? '✅ salva (' + esc(ai.key.slice(0, 10)) + '…)' : '— nenhuma'}<br>
+        ${ai.gkey && ai.gBackend ? `Gemini conectado via ${ai.gBackend === 'vertex' ? 'Vertex AI' : 'Google AI Studio'}.<br>` : ''}
+        Cole a chave (Gemini começa com <code>AIza</code> ou <code>AQ.</code>, Claude com <code>sk-ant-</code>). Fica salva só neste navegador.</p></div>
+      <div class="key-row" style="flex:1;max-width:460px">
+        <input id="apiKeyInput" type="password" placeholder="AIza... ou sk-ant-..." autocomplete="off">
+        <button class="btn primary" data-ai="save-key">Salvar</button>
+        ${(ai.provider === 'gemini' ? ai.gkey : ai.key) ? '<button class="btn danger" data-ai="remove-key">Remover</button>' : ''}
+      </div>
+    </div>
+    ${ai.provider === 'gemini' && ai.gkey ? `
+    <div class="set-row">
+      <div><h4>Modelos do Gemini</h4><p>Escolhidos automaticamente (o mais novo). Troque se algum der erro ou limite de uso.</p></div>
+      <div class="btns">
+        ${[['gModelFast', '⚡ Rápida'], ['gModelDeep', '🔬 Profunda']].map(([k, l]) => `
+          <label style="display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)">${l}
+            <select data-gmodel="${k}" style="background:#0a0a0e;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px">
+              ${[...new Set([ai[k], ...ai.gModels])].filter(Boolean).map(n => `<option ${n === ai[k] ? 'selected' : ''}>${esc(n)}</option>`).join('')}
+            </select></label>`).join('')}
+        <button class="btn" data-ai="reload-models" style="align-self:flex-end">↻ Atualizar lista</button>
+      </div>
+    </div>` : ''}
+    <div class="set-row">
+      <div><h4>Backup das anotações</h4><p>Exporte seu progresso para um arquivo ou importe um backup.</p></div>
+      <div class="btns">
+        <button class="btn" data-act="export">Exportar</button>
+        <button class="btn" data-act="import">Importar</button>
+        <input type="file" id="importFile" accept=".json" hidden>
+      </div>
+    </div>
+    <div class="set-row">
+      <div><h4>Resetar progresso</h4><p>Desmarca os jogos (as anotações são mantidas, a não ser que você apague tudo).</p></div>
+      <div class="btns">
+        <button class="btn danger" data-act="reset-main">Resetar principais</button>
+        <button class="btn danger" data-act="reset-sec">Resetar secundários</button>
+        <button class="btn danger" data-act="reset-all">Apagar tudo</button>
+      </div>
+    </div>
+    <div>
+      <h4 style="margin:0 0 12px;display:flex;align-items:center;gap:10px">${icon('i-pad').replace('<svg', '<svg style="width:20px;height:20px;color:var(--orange)"')} Jogos Secundários (${t.sec.length})</h4>
+      <div class="sec-list">
+        ${t.sec.map(g => `<button class="sec-item ${state.done[g.id] ? 'done' : ''}" data-open="${g.id}">
+          <span class="e" style="background:radial-gradient(circle at 30% 25%, ${g.c[0]}, ${g.c[1]})">${g.icon}</span>
+          <span style="text-align:left">${esc(g.name)}</span><span class="s">${state.done[g.id] ? '✔ Feito' : 'Pendente'}</span></button>`).join('')}
+      </div>
+    </div>
+  </section>`;
+}
+
+function animateBars() {
+  document.querySelectorAll('[data-w]').forEach(el => el.style.width = el.dataset.w + '%');
+  document.querySelectorAll('[data-offset]').forEach(el => el.style.strokeDashoffset = el.dataset.offset);
+}
+
+/* ---------- ajuda: Oráculo do Hollow (Claude + pesquisa na web) ---------- */
+const AI_KEY = 'hollow-ai-v1';
+const SDK_URLS = ['https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.110.0/+esm', 'https://esm.sh/@anthropic-ai/sdk@0.110.0'];
+// msgs/gmsgs = histórico enviado à API (Claude/Gemini), view = o que aparece na tela
+let ai = { provider: 'gemini', key: '', gkey: '', gModels: [], gModelFast: '', gModelDeep: '', mode: 'deep', msgs: [], gmsgs: [], view: [] };
+try { Object.assign(ai, JSON.parse(localStorage.getItem(AI_KEY)) || {}); } catch {}
+const hasKey = () => ai.provider === 'gemini' ? !!ai.gkey : !!ai.key;
+// versão 2 da escolha automática de modelos (estáveis primeiro): refaz a escolha antiga
+if (ai.gPickV !== 2) { ai.gModelFast = ai.gModelDeep = ''; ai.gPickV = 2; }
+// resposta que estava sendo gerada quando a página foi fechada/recarregada não fica "carregando" para sempre
+ai.view.forEach(m => { if (m.status === 'streaming') { m.status = 'done'; m.steps = []; m.error ||= 'Resposta interrompida (a página foi recarregada).'; } });
+const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta';
+let aiStream = null;
+let sdkPromise = null;
+
+function saveAi() {
+  try { localStorage.setItem(AI_KEY, JSON.stringify(ai)); }
+  catch {
+    // histórico grande demais para o navegador: mantém só a conversa visível
+    ai.msgs = [];
+    ai.gmsgs = [];
+    try { localStorage.setItem(AI_KEY, JSON.stringify(ai)); } catch {}
+  }
+}
+
+function getSDK() {
+  sdkPromise ||= (async () => {
+    for (const url of SDK_URLS) {
+      try { return (await import(url)).default; } catch {}
+    }
+    sdkPromise = null;
+    throw new Error('Não consegui carregar a biblioteca da IA. Verifique sua internet.');
+  })();
+  return sdkPromise;
+}
+
+const SYSTEM = `Você é o "Oráculo do Hollow", um assistente especialista no evento de Halloween "The Hollow" do Roblox.
+Você ajuda um jogador brasileiro a completar o evento. Responda sempre em português do Brasil, de forma clara e direta, usando markdown (listas, **negrito**, títulos curtos).
+
+Jogos do evento:
+- 9 jogos PRINCIPAIS: ${listOf('main').map(g => g.name).join(', ')}.
+- ${listOf('sec').length} jogos SECUNDÁRIOS: ${listOf('sec').map(g => g.name).join(', ')}.
+
+Como trabalhar:
+- O evento é recente e muda com frequência: para qualquer dúvida sobre o The Hollow (missões/quests de cada jogo, como conseguir badges e itens, recompensas, datas, códigos, bugs, atualizações), PESQUISE na web antes de responder. Faça várias buscas com termos diferentes (em inglês e português, ex.: "Roblox The Hollow event <jogo> quest", "The Hollow Roblox rewards") e abra as páginas mais promissoras (wikis, Roblox DevForum, sites de notícias, Reddit, vídeos) para confirmar detalhes.
+- Prefira fontes recentes e diga quando informações conflitam ou quando não encontrou algo confiável. Nunca invente passos de missão.
+- Para guias de missão, dê o passo a passo numerado e objetivo.
+- Cada mensagem do jogador traz um bloco <progresso> com o que ele já concluiu e as anotações dele. Use isso para personalizar (ex.: sugerir o que falta, montar um plano). Não repita o bloco inteiro na resposta.
+- Data de hoje: ${new Date().toLocaleDateString('pt-BR')}.`;
+
+function progressBlock() {
+  const line = g => `- ${g.name}: ${state.done[g.id] ? 'CONCLUÍDO' : 'pendente'}${state.notes[g.id] ? ` (anotação: ${state.notes[g.id].replace(/\s+/g, ' ').slice(0, 200)})` : ''}`;
+  return `<progresso>\nPrincipais:\n${listOf('main').map(line).join('\n')}\nSecundários:\n${listOf('sec').map(line).join('\n')}\n</progresso>`;
+}
+
+function inline(s) {
+  return s
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, '$1<em>$2</em>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+}
+
+function md(src) {
+  // escapa primeiro, depois aplica um markdown simples (seguro contra HTML injetado)
+  const parts = esc(src).split(/```[\w-]*\n?([\s\S]*?)(?:```|$)/);
+  return parts.map((part, i) => {
+    if (i % 2) return `<pre><code>${part}</code></pre>`;
+    let html = '', list = null, para = [];
+    const flushPara = () => { if (para.length) html += `<p>${inline(para.join('<br>'))}</p>`; para = []; };
+    const flushList = () => { if (list) html += `<${list.tag}>${list.items.map(li => `<li>${inline(li)}</li>`).join('')}</${list.tag}>`; list = null; };
+    for (const raw of part.split('\n')) {
+      const line = raw.trimEnd();
+      let m;
+      if (!line.trim()) { flushPara(); flushList(); }
+      else if ((m = line.match(/^(#{1,4})\s+(.*)/))) { flushPara(); flushList(); html += `<h${m[1].length + 1}>${inline(m[2])}</h${m[1].length + 1}>`; }
+      else if ((m = line.match(/^\s*(?:[-*•]|(\d+)[.)])\s+(.*)/))) {
+        flushPara();
+        const tag = m[1] ? 'ol' : 'ul';
+        if (!list || list.tag !== tag) { flushList(); list = { tag, items: [] }; }
+        list.items.push(m[2]);
+      }
+      else { flushList(); para.push(line); }
+    }
+    flushPara(); flushList();
+    return html;
+  }).join('');
+}
+
+function hostOf(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return url; } }
+
+function msgHTML(m, i) {
+  if (m.role === 'user') return `<div class="msg user"><div class="bubble">${esc(m.text).replace(/\n/g, '<br>')}</div></div>`;
+  const steps = m.steps.length ? `<div class="steps">${m.steps.map(s =>
+    `<span class="step ${s.live ? 'live' : ''}" title="${esc(s.label)}">${esc(s.label)}</span>`).join('')}</div>` : '';
+  const think = m.thinking ? `<button class="think-btn" data-think="${i}">💭 ${m.showThink ? 'Esconder' : 'Ver'} raciocínio</button>
+    ${m.showThink ? `<div class="think">${esc(m.thinking)}</div>` : ''}` : '';
+  const secs = m.started ? ` <small style="color:var(--dim)">${Math.round((Date.now() - m.started) / 1000)}s</small>` : '';
+  const body = m.text ? `<div class="md">${md(m.text)}</div>` : m.status === 'streaming' ? `<div class="typing"><span></span><span></span><span></span>${secs}</div>` : '';
+  const srcs = m.sources?.length ? `<div class="sources"><b>${m.cited ? '📚 Fontes' : '🔎 Páginas consultadas'}</b>${m.sources.slice(0, 8).map(s =>
+    `<a href="${esc(s.url)}" target="_blank" rel="noopener">↗ ${esc(s.title || hostOf(s.url))} <span style="color:var(--dim)">· ${esc(hostOf(s.url))}</span></a>`).join('')}</div>` : '';
+  const notice = m.notice ? `<div class="err" style="color:#fcd34d">⚠️ ${esc(m.notice)}</div>` : '';
+  const details = m.details ? `<button class="think-btn" data-details="${i}" style="margin-top:8px">🛠️ ${m.showDetails ? 'Esconder' : 'Ver'} detalhes técnicos</button>
+    ${m.showDetails ? `<div class="think">${esc(m.details)}</div>` : ''}` : '';
+  return `<div class="msg ai"><div class="avatar">🔮</div><div class="bubble">${steps}${think}${body}${notice}${m.error ? `<div class="err">⚠️ ${esc(m.error)}</div>` : ''}${details}${srcs}</div></div>`;
+}
+
+const SUGGESTIONS = [
+  'Quais são as recompensas do The Hollow e como ganhá-las?',
+  'O que eu ainda preciso fazer? Monte um plano pra mim',
+  'Como completar a missão do evento no DOORS?',
+  'Até quando vai o evento The Hollow?',
+];
+
+function renderChat() {
+  const busy = !!aiStream;
+  return `
+  <section class="card chat">
+    <div class="chat-head">
+      <div class="orb">🔮</div>
+      <div><h2>Oráculo do Hollow</h2><small>${ai.provider === 'gemini' ? `Gemini (${esc((ai.mode === 'deep' ? ai.gModelDeep : ai.gModelFast) || 'automático')}) · pesquisa no Google` : 'Claude Opus 5.5 · pesquisa na web'} em tempo real</small></div>
+      <div class="right">
+        <div class="seg" title="Rápida: responde mais rápido. Profunda: faz várias pesquisas e confere fontes.">
+          <button data-ai-mode="fast" class="${ai.mode === 'fast' ? 'active' : ''}">⚡ Rápida</button>
+          <button data-ai-mode="deep" class="${ai.mode === 'deep' ? 'active' : ''}">🔬 Profunda</button>
+        </div>
+        ${ai.provider === 'gemini' && Date.now() < (ai.gSearchPausedUntil || 0)
+          ? `<button class="btn" data-ai="resume-search" title="A pesquisa ficou sem cota. Clique para tentar usar de novo.">🔎 Reativar pesquisa</button>` : ''}
+        <button class="btn" data-ai="new" ${busy ? 'disabled' : ''}>Nova conversa</button>
+      </div>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-input">
+      <textarea id="chatInput" rows="1" placeholder="${hasKey() ? 'Pergunte qualquer coisa sobre o evento...' : 'Configure sua chave acima para conversar'}" ${hasKey() ? '' : 'disabled'}>${esc(ui.draft || '')}</textarea>
+      <button class="send ${busy ? 'stop' : ''}" id="chatSend" data-ai="${busy ? 'stop' : 'send'}" title="${busy ? 'Parar' : 'Enviar'}">${icon(busy ? 'i-stop' : 'i-send')}</button>
+    </div>
+  </section>`;
+}
+
+let paintQueued = false;
+function paintChat(force) {
+  const box = $('#chatBody');
+  if (!box) return;
+  if (!force) {
+    if (paintQueued) return;
+    paintQueued = true;
+    return requestAnimationFrame(() => { paintQueued = false; paintChat(true); });
+  }
+  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  if (!hasKey()) {
+    box.innerHTML = `<div class="key-card">
+      <h3>🔑 Conecte o Oráculo</h3>
+      <p>O Oráculo usa o <b>Gemini</b> (Google) com pesquisa no Google. Cole aqui sua chave da API do Gemini (começa com <code>AIza</code> ou <code>AQ.</code>).
+      Crie uma em <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+      A chave fica salva só neste navegador. Também aceita chave do Claude (<code>sk-ant-</code>).</p>
+      <div class="key-row"><input id="apiKeyInput" type="password" placeholder="AIza... ou AQ...." autocomplete="off"><button class="btn primary" data-ai="save-key">Salvar chave</button></div>
+    </div>`;
+    return;
+  }
+  box.innerHTML = ai.view.length ? ai.view.map(msgHTML).join('') : `
+    <div class="chat-empty">
+      <div class="big">🔮</div>
+      <h3>Pergunte ao Oráculo</h3>
+      <div>Ele pesquisa na internet sobre o The Hollow e conhece o seu progresso. Peça guias de missão, recompensas, datas ou um plano do que falta.</div>
+      <div class="chips">${SUGGESTIONS.map(s => `<button class="chip" data-suggest="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+    </div>`;
+  if (nearBottom || force === 'bottom') box.scrollTop = box.scrollHeight;
+}
+
+function refreshChatControls() {
+  if (ui.view !== 'ajuda') return;
+  const busy = !!aiStream, b = $('#chatSend');
+  if (b) { b.className = 'send' + (busy ? ' stop' : ''); b.dataset.ai = busy ? 'stop' : 'send'; b.title = busy ? 'Parar' : 'Enviar'; b.innerHTML = icon(busy ? 'i-stop' : 'i-send'); }
+  const n = document.querySelector('[data-ai="new"]');
+  if (n) n.disabled = busy;
+}
+
+function errorText(Anthropic, err) {
+  if (err instanceof Anthropic.AuthenticationError) return 'Chave da API inválida. Confira em Configurações.';
+  if (err instanceof Anthropic.PermissionDeniedError) return 'Sua chave não tem permissão para este modelo ou ferramenta.';
+  if (err instanceof Anthropic.RateLimitError) return 'Muitas perguntas seguidas (limite da API). Espere um pouco e tente de novo.';
+  if (err instanceof Anthropic.BadRequestError) return 'Pedido recusado pela API: ' + (err.error?.error?.message || err.message);
+  if (err instanceof Anthropic.APIConnectionError) return 'Sem conexão com a API. Verifique sua internet.';
+  if (err instanceof Anthropic.APIError) return 'Erro da API: ' + err.message;
+  return err?.message || String(err);
+}
+
+/* ----- Gemini ----- */
+// modelos "preview" costumam ter cota gratuita zero/baixa, então estáveis vêm sempre primeiro
+const geminiScore = n => (/preview|exp/.test(n) ? 0 : 100) + parseFloat((n.match(/gemini-(\d+(?:\.\d+)?)/) || [])[1] || 0);
+
+// escolhe o Gemini mais novo do tipo pedido (pro/flash), preferindo versões estáveis
+function pickGeminiModel(names, tier) {
+  const ok = names.filter(n => new RegExp(`^gemini-[\\d.]+-${tier}(-preview[\\w-]*|-latest)?$`).test(n));
+  return ok.sort((a, b) => geminiScore(b) - geminiScore(a))[0] || '';
+}
+
+// chaves "AIza..." costumam ser do Google AI Studio; chaves "AQ." podem ser do AI Studio ou do Vertex AI (modo express)
+const VERTEX_API = 'https://aiplatform.googleapis.com';
+const gKeyParam = () => 'key=' + encodeURIComponent(ai.gkey);
+const gModelUrl = (model, method) => ai.gBackend === 'vertex'
+  ? `${VERTEX_API}/v1/publishers/google/models/${encodeURIComponent(model)}:${method}`
+  : `${GEMINI_API}/models/${encodeURIComponent(model)}:${method}`;
+const isUsableModel = n => /^gemini-/.test(n) && !/tts|image|embed|live|audio|robotics|computer|nano/.test(n);
+
+async function getJSON(url, opts) {
+  const res = await fetch(url, opts);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error?.message || `${res.status} ${res.statusText}`);
+  return data;
+}
+
+async function listStudioModels() {
+  const data = await getJSON(`${GEMINI_API}/models?pageSize=1000&${gKeyParam()}`);
+  return (data.models || [])
+    .filter(m => m.supportedGenerationMethods?.includes('generateContent'))
+    .map(m => m.name.replace('models/', ''));
+}
+
+async function listVertexModels() {
+  const data = await getJSON(`${VERTEX_API}/v1beta1/publishers/google/models?pageSize=200&${gKeyParam()}`);
+  return (data.publisherModels || []).map(m => m.name.split('/').pop());
+}
+
+async function detectGeminiBackend() {
+  try { await listStudioModels(); ai.gBackend = 'studio'; return; } catch (err) {
+    // não é chave do AI Studio: testa se é uma chave do Vertex AI
+    try {
+      ai.gBackend = 'vertex';
+      await getJSON(`${gModelUrl('gemini-2.5-flash', 'generateContent')}?${gKeyParam()}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'oi' }] }], generationConfig: { maxOutputTokens: 5 } }),
+      });
+    } catch {
+      ai.gBackend = '';
+      throw err;
+    }
+  }
+}
+
+async function loadGeminiModels() {
+  try {
+    if (!ai.gBackend) await detectGeminiBackend();
+    const names = ai.gBackend === 'vertex'
+      ? await listVertexModels().catch(() => ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.5-flash-lite'])
+      : await listStudioModels();
+    ai.gModels = names.filter(isUsableModel).sort();
+  } catch (err) {
+    toast('⚠️ A chave não funcionou no Gemini: ' + err.message);
+  }
+  if (!ai.gModels.includes(ai.gModelDeep)) ai.gModelDeep = pickGeminiModel(ai.gModels, 'pro') || pickGeminiModel(ai.gModels, 'flash') || 'gemini-2.5-pro';
+  if (!ai.gModels.includes(ai.gModelFast)) ai.gModelFast = pickGeminiModel(ai.gModels, 'flash') || 'gemini-2.5-flash';
+  saveAi();
+}
+
+function geminiError(status, msg) {
+  if (/API_KEY_INVALID|API key not valid/i.test(msg)) return 'Chave do Gemini inválida. Confira em Configurações.';
+  if (status === 429) return 'Sua chave do Gemini está sem cota em todos os modelos testados. A cota grátis renova por minuto e por dia (o limite diário zera por volta das 4h–5h da manhã, horário de Brasília). Veja seu uso em ai.dev/rate-limit ou ative o faturamento no Google AI Studio.';
+  if (status >= 500 || status === 'timeout') return 'Os servidores do Gemini estão sobrecarregados agora (erro do Google, não do programa). Tente de novo em alguns minutos.';
+  if (status === 'rede') return 'Falha de conexão com o Gemini: ' + msg;
+  if (status === 403) return 'Sua chave não tem permissão para esse modelo. Escolha outro em Configurações.';
+  if (status === 404) return 'Nenhum modelo do Gemini funcionou com sua chave (o último não existe mais). Clique em "Ver detalhes técnicos" para ver o motivo de cada um.';
+  return `Erro do Gemini (${status}): ${msg}`;
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const SEARCH_PAUSE_MS = 30 * 60 * 1000;
+const NO_SEARCH_NOTE = `
+
+IMPORTANTE — AGORA VOCÊ NÃO TEM ACESSO À PESQUISA NA WEB (a cota acabou). Ignore as instruções acima sobre pesquisar.
+Não tente chamar nenhuma ferramenta. Responda direto, só com o que você já sabe sobre o Roblox, o evento The Hollow e os jogos.
+Avise de forma breve no início que está respondendo sem pesquisa e que detalhes recentes do evento (datas, missões novas) podem estar desatualizados.
+Se não souber algo específico, diga isso com sinceridade e sugira onde o jogador pode conferir (ex.: página do evento no Roblox, wiki do jogo, Discord oficial).`;
+
+// uma tentativa com um modelo: transmite a resposta para a tela e devolve o resultado (nunca lança erro)
+async function geminiAttempt({ model, search, thinking, system, contents, view, signal, note }) {
+  const ctrl = new AbortController();
+  const onAbort = () => ctrl.abort();
+  signal.addEventListener('abort', onAbort);
+  // desiste deste modelo se ele ficar 60s sem mandar nada (fila de servidor lotado)
+  let last = Date.now(), timedOut = false;
+  const timer = setInterval(() => { if (Date.now() - last > 60000) { timedOut = true; ctrl.abort(); } }, 1000);
+  const textStart = view.text.length, thinkStart = view.thinking.length;
+  const out = { ok: false, status: 0, msg: '', gotText: false, finish: '', blocked: '', queries: [] };
+  note(`→ ${model} (pesquisa ${search ? 'ligada' : 'desligada'}, raciocínio ${thinking ? 'ligado' : 'desligado'})`);
+  try {
+    const res = await fetch(`${gModelUrl(model, 'streamGenerateContent')}?alt=sse&${gKeyParam()}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: system }] },
+        contents,
+        tools: search ? [{ google_search: {} }] : undefined,
+        generationConfig: thinking ? { thinkingConfig: { includeThoughts: true } } : {},
+      }),
+    });
+    last = Date.now();
+    note(`← HTTP ${res.status}`);
+    if (!res.ok) {
+      out.status = res.status;
+      out.msg = (await res.json().catch(() => ({}))).error?.message || res.statusText;
+      note('erro: ' + out.msg.slice(0, 160));
+      return out;
+    }
+
+    const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buf = '', bytes = 0, chunks = 0, unparsed = '';
+    const handleEvent = evt => {
+      const data = evt.split(/\r?\n/).filter(l => l.startsWith('data:')).map(l => l.slice(5).trim()).join('');
+      if (!data) { if (evt.trim()) unparsed ||= evt.trim().slice(0, 300); return; }
+      let chunk;
+      try { chunk = JSON.parse(data); } catch { unparsed ||= data.slice(0, 300); return; }
+      chunks++;
+      // erro no meio da resposta (ex.: servidor lotado depois de começar)
+      if (chunk.error) { out.status = chunk.error.code || 500; out.msg = chunk.error.message || 'erro no meio da resposta'; throw out; }
+      if (chunk.promptFeedback?.blockReason) out.blocked = chunk.promptFeedback.blockReason;
+      const cand = chunk.candidates?.[0];
+      if (!cand) return;
+      for (const p of cand.content?.parts || []) {
+        if (!p.text) continue;
+        if (p.thought) view.thinking += p.text;
+        else { view.text += p.text; out.gotText = true; }
+      }
+      const gm = cand.groundingMetadata;
+      for (const q of gm?.webSearchQueries || []) if (!out.queries.includes(q)) out.queries.push(q);
+      for (const c of gm?.groundingChunks || []) {
+        const w = c.web;
+        if (w?.uri && !view.sources.some(s => s.url === w.uri)) view.sources.push({ url: w.uri, title: w.title });
+      }
+      if (out.queries.length) view.steps = [...view.steps.filter(s => !s.query), ...out.queries.map(q => ({ label: '🔎 ' + q, query: true }))];
+      if (cand.finishReason) out.finish = cand.finishReason;
+      paintChat();
+    };
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      last = Date.now();
+      if (!bytes) note('primeiros dados recebidos');
+      bytes += value.length;
+      buf += value;
+      const events = buf.split(/\r?\n\r?\n/);
+      buf = events.pop();
+      events.forEach(handleEvent);
+    }
+    if (buf.trim()) handleEvent(buf);
+    note(`fim: ${chunks} pedaços, ${bytes} bytes, finishReason=${out.finish || 'nenhum'}${out.blocked ? ', bloqueado=' + out.blocked : ''}`);
+    if (unparsed) note('trecho não reconhecido: ' + unparsed);
+    out.ok = true;
+    return out;
+  } catch (e) {
+    if (e === out) note(`erro no meio da resposta: ${out.status} ${out.msg.slice(0, 160)}`);
+    else if (signal.aborted) out.aborted = true;
+    else if (timedOut) { out.status = 'timeout'; out.msg = 'o modelo ficou 60s sem mandar nada'; note('⏱️ 60s sem dados, desistindo deste modelo'); }
+    else { out.status = 'rede'; out.msg = e?.message || String(e); note('exceção: ' + out.msg); }
+    // tentativa falhou antes de escrever a resposta: limpa o raciocínio parcial dela
+    if (!out.gotText) { view.text = view.text.slice(0, textStart); view.thinking = view.thinking.slice(0, thinkStart); }
+    return out;
+  } finally {
+    clearInterval(timer);
+    signal.removeEventListener('abort', onAbort);
+  }
+}
+
+async function askGemini(question) {
+  ui.draft = '';
+  const input = $('#chatInput');
+  if (input) { input.value = ''; input.style.height = ''; }
+
+  const t0 = Date.now(), log = [];
+  const note = s => log.push(`[${((Date.now() - t0) / 1000).toFixed(1)}s] ${s}`);
+  const view = { role: 'ai', text: '', thinking: '', steps: [], sources: [], cited: true, status: 'streaming', started: t0 };
+  const step = label => { view.steps.push({ label }); paintChat(); };
+  ai.view.push({ role: 'user', text: question }, view);
+  const userMsg = { role: 'user', parts: [{ text: `${progressBlock()}\n\n${question}` }] };
+  const ctrl = new AbortController();
+  aiStream = { aborted: false, abort() { this.aborted = true; ctrl.abort(); } };
+  refreshChatControls();
+  paintChat('bottom');
+  const ticker = setInterval(() => paintChat(), 1000);
+  const attempts = [];
+
+  try {
+    if (!ai.gModelDeep || !ai.gModelFast) await loadGeminiModels();
+    const deep = ai.mode === 'deep';
+    // a cota é separada por modelo: se o escolhido falhar, tenta os outros flash/flash-lite estáveis
+    const stableFlash = ai.gModels.filter(n => /^gemini-[\d.]+-flash(-lite)?$/.test(n)).sort((a, b) => geminiScore(b) - geminiScore(a));
+    const candidates = [...new Set([
+      deep ? ai.gModelDeep : ai.gModelFast,
+      ai.gModelFast,
+      ...stableFlash,
+      ...(ai.gModels.length ? [] : ['gemini-2.5-flash']),
+    ].filter(n => n && (!ai.gModels.length || ai.gModels.includes(n))))].slice(0, 6);
+    const system = SYSTEM + (deep
+      ? '\n\nMODO PROFUNDO: faça muitas pesquisas diferentes no Google, compare fontes e dê uma resposta completa e verificada.'
+      : '\n\nMODO RÁPIDO: faça poucas pesquisas e responda de forma curta.');
+
+    // se a pesquisa no Google ficou sem cota há pouco tempo, nem tenta (economiza tempo e cota)
+    let search = Date.now() >= (ai.gSearchPausedUntil || 0);
+    const searchAtStart = search;
+    note(`backend: ${ai.gBackend || 'studio'} · modelos disponíveis: ${ai.gModels.length}${search ? '' : ' · pesquisa pausada (sem cota)'}`);
+    view.steps = [{ label: search ? '🧠 Pensando e pesquisando no Google...' : '🧠 Pensando (pesquisa no Google pausada: sem cota)...', live: true }];
+
+    let result = null, last = null, usedModel = '', usedSearch = search;
+    for (let i = 0; i < candidates.length && !result; i++) {
+      const model = candidates[i];
+      let s = search, thinking = true, retried = false, triedNoSearch = false;
+      for (;;) {
+        const r = await geminiAttempt({ model, search: s, thinking, system: s ? system : system + NO_SEARCH_NOTE, contents: [...ai.gmsgs, userMsg], view, signal: ctrl.signal, note });
+        if (r.aborted) throw new Error('aborted');
+        // terminou "certo" mas sem texto (ex.: tentou chamar uma ferramenta que não existe): conta como falha
+        if (r.ok && !r.gotText && !r.blocked) { r.ok = false; r.status = 'vazio'; r.msg = 'terminou sem texto (finishReason=' + (r.finish || 'nenhum') + ')'; }
+        if (r.ok || r.gotText) { result = r; usedModel = model; usedSearch = s; break; }
+        last = r;
+        attempts.push(`${model}${s ? '' : ' (sem pesquisa)'} → ${r.status}: ${r.msg}`);
+        if (r.status === 400 && thinking && /think|thought/i.test(r.msg)) { thinking = false; continue; }
+        const why = { 429: 'sem cota', 403: 'sem permissão', 404: 'não existe', 400: 'recusou o pedido', timeout: 'demorou demais', rede: 'falha de conexão', vazio: 'respondeu vazio' }[r.status]
+          || (r.status >= 500 ? 'sobrecarregado' : 'erro ' + r.status);
+        // sem cota COM pesquisa: testa o mesmo modelo sem pesquisa para saber se a pesquisa é o bloqueio
+        if (r.status === 429 && s) { s = false; triedNoSearch = true; step(`🔁 ${model} sem cota com pesquisa; testando sem a pesquisa`); continue; }
+        // servidor lotado ou lento: espera um pouco e tenta o mesmo modelo mais uma vez
+        if ((r.status >= 500 || r.status === 'timeout' || r.status === 'rede' || r.status === 'vazio') && !retried) {
+          // resposta vazia: na segunda vez tenta sem o modo de raciocínio
+          if (r.status === 'vazio') thinking = false;
+          retried = true;
+          step(`⏳ ${model} ${why}, tentando de novo...`);
+          await sleep(3000);
+          if (ctrl.signal.aborted) throw new Error('aborted');
+          continue;
+        }
+        // sem pesquisa deu outro erro que não cota: a pesquisa provavelmente é o bloqueio, segue sem ela
+        if (triedNoSearch && r.status !== 429) search = false;
+        step(i + 1 < candidates.length ? `⏭️ ${model} ${why}, tentando ${candidates[i + 1]}` : `❌ ${model} ${why}`);
+        break;
+      }
+    }
+
+    if (!result) {
+      const quota = attempts.some(a => / → 429:/.test(a));
+      const busy = attempts.some(a => / → (5\d\d|timeout):/.test(a));
+      if (quota && busy) throw new Error('A cota da sua chave acabou para alguns modelos e os outros estão com os servidores lotados agora. Tente de novo em alguns minutos.');
+      throw new Error(geminiError(last?.status, last?.msg || ''));
+    }
+
+    view.steps.forEach(s => s.live = false);
+    view.steps = view.steps.filter(s => !s.label.startsWith('🧠'));
+    if (usedModel !== candidates[0]) view.steps.push({ label: '✅ Respondido com ' + usedModel });
+    if (!usedSearch) {
+      if (searchAtStart) ai.gSearchPausedUntil = Date.now() + SEARCH_PAUSE_MS;
+      view.notice = 'Resposta SEM pesquisa no Google: a cota de pesquisa da sua chave acabou (o programa tenta de novo em 30 min). As informações podem estar desatualizadas.';
+    }
+    if (result.blocked || /SAFETY|PROHIBITED|BLOCKLIST|SPII|RECITATION/.test(result.finish)) {
+      view.error = 'O Gemini bloqueou essa resposta. Tente reformular a pergunta.';
+    } else {
+      if (!result.ok) view.error = `A resposta foi cortada no meio por um erro do Google (${result.status}). Tente perguntar de novo.`;
+      else if (result.finish && result.finish !== 'STOP' && result.finish !== 'MAX_TOKENS') note('finishReason incomum: ' + result.finish);
+      else if (result.finish === 'MAX_TOKENS') view.error = 'A resposta ficou longa demais e foi cortada.';
+      if (view.text) ai.gmsgs = [...ai.gmsgs, userMsg, { role: 'model', parts: [{ text: view.text }] }];
+      else view.error ||= 'O Gemini não retornou resposta. Tente de novo.';
+    }
+    if (attempts.length || !view.text) view.details = [...attempts, ...log].join('\n');
+  } catch (err) {
+    view.error = aiStream?.aborted ? 'Resposta interrompida.' : err.message;
+    view.details = [...attempts, ...log].join('\n');
+    view.steps = view.steps.filter(s => !s.live);
+  } finally {
+    clearInterval(ticker);
+    view.status = 'done';
+    aiStream = null;
+    saveAi();
+    refreshChatControls();
+    paintChat();
+  }
+}
+
+function askAI(question) {
+  question = question.trim();
+  if (!question || aiStream || !hasKey()) return;
+  return ai.provider === 'gemini' ? askGemini(question) : askClaude(question);
+}
+
+/* ----- Claude ----- */
+async function askClaude(question) {
+  ui.draft = '';
+  const input = $('#chatInput');
+  if (input) { input.value = ''; input.style.height = ''; }
+
+  const view = { role: 'ai', text: '', thinking: '', steps: [], sources: [], cited: false, status: 'streaming' };
+  ai.view.push({ role: 'user', text: question }, view);
+  const userMsg = { role: 'user', content: `${progressBlock()}\n\n${question}` };
+  const history = [...ai.msgs, userMsg];
+  aiStream = { abort() { this.aborted = true; } };
+  refreshChatControls();
+  paintChat('bottom');
+
+  let Anthropic;
+  try {
+    Anthropic = await getSDK();
+    const client = new Anthropic({ apiKey: ai.key, dangerouslyAllowBrowser: true, maxRetries: 2 });
+    const deep = ai.mode === 'deep';
+    let assistantContent = [];
+    let baseText = '';
+
+    // o servidor pode pausar pesquisas longas (pause_turn): continuamos até 5 vezes
+    for (let round = 0; round < 6; round++) {
+      if (aiStream.aborted) throw new Error('aborted');
+      const messages = assistantContent.length ? [...history, { role: 'assistant', content: assistantContent }] : history;
+      const stream = client.beta.messages.stream({
+        model: 'claude-opus-5-5',
+        max_tokens: 64000,
+        betas: ['server-side-fallback-2026-07-01'],
+        fallbacks: 'default',
+        thinking: { type: 'adaptive', display: 'summarized' },
+        output_config: { effort: deep ? 'high' : 'low' },
+        system: SYSTEM,
+        tools: [
+          { type: 'web_search_20260209', name: 'web_search', max_uses: deep ? 15 : 4 },
+          { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: deep ? 8 : 2 },
+        ],
+        messages,
+      });
+      const prevAbort = aiStream.aborted;
+      aiStream = stream;
+      if (prevAbort) stream.abort();
+
+      const partial = {}, stepAt = {};
+      for await (const ev of stream) {
+        if (ev.type === 'content_block_start') {
+          const b = ev.content_block;
+          if (b.type === 'server_tool_use') {
+            const step = { label: b.name === 'web_fetch' ? '📄 Lendo página...' : '🔎 Pesquisando...', live: true, name: b.name };
+            view.steps.push(step);
+            stepAt[ev.index] = step;
+            partial[ev.index] = '';
+          } else if (b.type === 'web_search_tool_result') {
+            view.steps.forEach(s => { if (s.name === 'web_search') s.live = false; });
+            if (Array.isArray(b.content)) {
+              for (const r of b.content) if (r.url && !view.sources.some(s => s.url === r.url)) view.sources.push({ url: r.url, title: r.title });
+            }
+          } else if (b.type === 'web_fetch_tool_result') {
+            view.steps.forEach(s => { if (s.name === 'web_fetch') s.live = false; });
+          }
+        } else if (ev.type === 'content_block_delta') {
+          const d = ev.delta;
+          if (d.type === 'text_delta') view.text += d.text;
+          else if (d.type === 'thinking_delta') view.thinking += d.thinking;
+          else if (d.type === 'input_json_delta' && stepAt[ev.index]) {
+            partial[ev.index] += d.partial_json;
+            const q = partial[ev.index].match(/"(query|url)"\s*:\s*"((?:[^"\\]|\\.)*)/);
+            if (q) stepAt[ev.index].label = (q[1] === 'url' ? '📄 ' + hostOf(q[2]) : '🔎 ' + q[2]);
+          }
+        }
+        paintChat();
+      }
+
+      const final = await stream.finalMessage();
+      assistantContent = [...assistantContent, ...final.content];
+      view.steps.forEach(s => s.live = false);
+
+      // texto final (corrige o que foi mostrado caso tenha havido troca de modelo no meio)
+      const textBlocks = final.content.filter(b => b.type === 'text');
+      baseText += textBlocks.map(b => b.text).join('');
+      view.text = baseText;
+      const cited = [];
+      for (const b of textBlocks) for (const c of b.citations || []) {
+        if (c.url && !cited.some(s => s.url === c.url)) cited.push({ url: c.url, title: c.title });
+      }
+      if (cited.length) { view.sources = cited; view.cited = true; }
+
+      if (final.stop_reason === 'pause_turn') continue;
+      if (final.stop_reason === 'refusal') {
+        view.error = 'O Oráculo não pôde responder essa pergunta. Tente reformular.';
+        assistantContent = null;
+      } else if (final.stop_reason === 'max_tokens') {
+        view.error = 'A resposta ficou longa demais e foi cortada.';
+      }
+      break;
+    }
+
+    if (assistantContent) ai.msgs = [...history, { role: 'assistant', content: assistantContent }];
+  } catch (err) {
+    const aborted = aiStream?.aborted || aiStream?.controller?.signal?.aborted || (Anthropic && err instanceof Anthropic.APIUserAbortError) || err?.message === 'aborted';
+    view.error = aborted ? 'Resposta interrompida.' : Anthropic ? errorText(Anthropic, err) : err?.message || String(err);
+    view.steps.forEach(s => s.live = false);
+  } finally {
+    view.status = 'done';
+    aiStream = null;
+    saveAi();
+    refreshChatControls();
+    paintChat();
+  }
+}
+
+/* ---------- actions ---------- */
+function toggle(id, ev) {
+  const g = byId[id];
+  const was = !!state.done[id];
+  const prev = pct(totals().mainDone, totals().main.length);
+  state.done[id] = !was;
+  if (!was) state.doneAt[id] = Date.now(); else delete state.doneAt[id];
+  save();
+  render();
+  if (!was) {
+    const t = totals();
+    if (ev) burst(ev.clientX, ev.clientY);
+    if (g.type === 'main' && t.mainDone === t.main.length && prev < 100) toast('🏆 Todos os jogos principais concluídos!');
+    else if (t.scopedDone === t.scoped.length) toast('🎉 Você completou o evento inteiro!');
+    else toast(`✅ ${g.name} concluído! Progresso: ${pct(t.scopedDone, t.scoped.length)}%`);
+  } else {
+    toast(`↩️ ${g.name} voltou para pendente`);
+  }
+}
+
+function burst(x, y) {
+  const em = ['🎃', '✨', '🦇', '👻', '🍬'];
+  for (let i = 0; i < 12; i++) {
+    const s = document.createElement('span');
+    s.className = 'spark';
+    s.textContent = em[i % em.length];
+    const a = Math.random() * Math.PI * 2, r = 50 + Math.random() * 70;
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    s.style.setProperty('--dx', Math.cos(a) * r + 'px');
+    s.style.setProperty('--dy', Math.sin(a) * r + 'px');
+    s.style.setProperty('--r', (Math.random() * 360 - 180) + 'deg');
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 900);
+  }
+}
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function openModal(id) {
+  const g = byId[id];
+  const d = !!state.done[id];
+  const when = state.doneAt[id] ? 'Concluído em ' + new Date(state.doneAt[id]).toLocaleString('pt-BR') : '';
+  $('#modal').innerHTML = `
+    <div class="modal-head">
+      <div class="icon" style="background:radial-gradient(circle at 30% 25%, ${g.c[0]}, ${g.c[1]})">${g.icon}</div>
+      <div><h3>${esc(g.name)}</h3><small>${g.type === 'main' ? '⭐ Jogo principal' : '🎮 Jogo secundário'} · ${d ? '✅ Concluído' : '🕒 Pendente'}</small></div>
+      <button class="x" data-close>×</button>
+    </div>
+    <label for="noteBox">Anotações</label>
+    <textarea id="noteBox" placeholder="Ex.: falta pegar o item X, a quest é no mapa Y...">${esc(state.notes[id] || '')}</textarea>
+    <div class="meta">${when}</div>
+    <div class="actions">
+      <button class="btn" data-close>Fechar</button>
+      <button class="btn primary" data-modal-toggle="${id}">${d ? 'Marcar como pendente' : '✔ Marcar como concluído'}</button>
+    </div>`;
+  $('#modalBg').classList.add('open');
+  const box = $('#noteBox');
+  box.addEventListener('input', () => {
+    const v = box.value.trim();
+    if (v) state.notes[id] = box.value; else delete state.notes[id];
+    save();
+  });
+  setTimeout(() => box.focus(), 50);
+}
+function closeModal() { $('#modalBg').classList.remove('open'); render(); }
+
+function download() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'the-hollow-progresso.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+document.addEventListener('click', e => {
+  const el = sel => e.target.closest(sel);
+  let x;
+  if ((x = el('[data-toggle]'))) { e.stopPropagation(); return toggle(x.dataset.toggle, e); }
+  if ((x = el('[data-modal-toggle]'))) { toggle(x.dataset.modalToggle, e); return openModal(x.dataset.modalToggle); }
+  if (el('[data-close]') || e.target.id === 'modalBg') return closeModal();
+  if ((x = el('[data-open]'))) return openModal(x.dataset.open);
+  if ((x = el('[data-view]'))) { ui.view = x.dataset.view; if (ui.view === 'main' || ui.view === 'sec') ui.tab = ui.view; return render(); }
+  if ((x = el('[data-tab]'))) { ui.tab = x.dataset.tab; if (ui.view !== 'home') ui.view = ui.tab; return render(); }
+  if ((x = el('[data-filter]'))) { ui.filter = x.dataset.filter; return render(); }
+  if ((x = el('[data-scope]'))) { state.scope = x.dataset.scope; save(); return render(); }
+  if ((x = el('[data-think]'))) { const m = ai.view[x.dataset.think]; m.showThink = !m.showThink; return paintChat(true); }
+  if ((x = el('[data-details]'))) { const m = ai.view[x.dataset.details]; m.showDetails = !m.showDetails; return paintChat(true); }
+  if ((x = el('[data-suggest]'))) return askAI(x.dataset.suggest);
+  if ((x = el('[data-ai-mode]'))) { ai.mode = x.dataset.aiMode; saveAi(); return render(); }
+  if ((x = el('[data-ai]'))) {
+    const act = x.dataset.ai;
+    if (act === 'send') return askAI($('#chatInput')?.value || '');
+    if (act === 'stop') return aiStream?.abort();
+    if (act === 'new' && !aiStream) { if (!ai.view.length || confirm('Começar uma nova conversa? A atual será apagada.')) { ai.msgs = []; ai.gmsgs = []; ai.view = []; saveAi(); render(); } return; }
+    if (act === 'save-key') {
+      const v = ($('#apiKeyInput')?.value || '').trim();
+      if (/^(AIza|AQ\.)/.test(v)) {
+        ai.gkey = v; ai.provider = 'gemini'; ai.gModelFast = ai.gModelDeep = ''; ai.gBackend = '';
+        saveAi(); toast('🔑 Chave do Gemini salva! Buscando modelos...');
+        return loadGeminiModels().then(() => { render(); if (ai.gBackend) toast(`✅ Oráculo pronto (${ai.gBackend === 'vertex' ? 'Vertex AI' : 'AI Studio'}) com ${ai.gModelDeep}`); });
+      }
+      if (v.startsWith('sk-ant-')) { ai.key = v; ai.provider = 'claude'; saveAi(); render(); return toast('🔑 Chave do Claude salva!'); }
+      return toast('⚠️ Chave não reconhecida. Gemini começa com AIza ou AQ., Claude com sk-ant-');
+    }
+    if (act === 'remove-key' && confirm('Remover a chave da API deste navegador?')) {
+      if (ai.provider === 'gemini') ai.gkey = ''; else ai.key = '';
+      saveAi(); render(); toast('Chave removida.');
+    }
+    if (act === 'resume-search') { ai.gSearchPausedUntil = 0; saveAi(); render(); toast('🔎 A próxima pergunta vai tentar usar a pesquisa no Google.'); }
+    if (act === 'reload-models') loadGeminiModels().then(() => { render(); toast('Lista de modelos atualizada.'); });
+    return;
+  }
+  if ((x = el('[data-ai-provider]')) && !aiStream) {
+    if (ai.provider !== x.dataset.aiProvider) { ai.provider = x.dataset.aiProvider; ai.msgs = []; ai.gmsgs = []; ai.view = []; saveAi(); render(); }
+    return;
+  }
+  if ((x = el('[data-act]'))) {
+    const act = x.dataset.act;
+    if (act === 'export') return download();
+    if (act === 'import') return $('#importFile').click();
+    const type = { 'reset-main': 'main', 'reset-sec': 'sec' }[act];
+    if (type && confirm(`Desmarcar todos os jogos ${type === 'main' ? 'principais' : 'secundários'}?`)) {
+      listOf(type).forEach(g => { delete state.done[g.id]; delete state.doneAt[g.id]; });
+      save(); render(); toast('Progresso resetado.');
+    }
+    if (act === 'reset-all' && confirm('Apagar TODO o progresso e todas as anotações?')) {
+      state = { done: {}, doneAt: {}, notes: {}, scope: state.scope };
+      save(); render(); toast('Tudo apagado. Recomeçando! 🎃');
+    }
+  }
+});
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'chatInput') {
+    ui.draft = e.target.value;
+    e.target.style.height = '';
+    e.target.style.height = Math.min(e.target.scrollHeight, 160) + 'px';
+  }
+  if (e.target.id === 'search') {
+    ui.q = e.target.value;
+    const pos = e.target.selectionStart;
+    render();
+    const s = $('#search'); s.focus(); s.setSelectionRange(pos, pos);
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.dataset.gmodel) { ai[e.target.dataset.gmodel] = e.target.value; saveAi(); return toast('Modelo alterado: ' + e.target.value); }
+  if (e.target.id !== 'importFile' || !e.target.files[0]) return;
+  e.target.files[0].text().then(txt => {
+    const data = JSON.parse(txt);
+    state = { done: data.done || {}, doneAt: data.doneAt || {}, notes: data.notes || {}, scope: data.scope || 'all' };
+    save(); render(); toast('Backup importado! 📥');
+  }).catch(() => toast('Arquivo inválido.'));
+});
+
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'chatInput' && e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askAI(e.target.value); }
+  if (e.target.id === 'apiKeyInput' && e.key === 'Enter') document.querySelector('[data-ai="save-key"]')?.click();
+});
+// PWA: só funciona quando o app está num site (http/https), não abrindo o arquivo direto
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modalBg').classList.contains('open')) closeModal(); });
+
+render();
+</script>
+</body>
+</html>
