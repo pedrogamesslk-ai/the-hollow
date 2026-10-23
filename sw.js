@@ -1,5 +1,5 @@
 // Service worker: deixa o app abrir mesmo sem internet (a IA continua precisando de internet)
-const CACHE = 'hollow-v1';
+const CACHE = 'hollow-v2';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -18,7 +18,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET' || url.origin !== self.location.origin) return;
   // rede primeiro (pega atualizações), cache se estiver offline
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-cache' })
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));

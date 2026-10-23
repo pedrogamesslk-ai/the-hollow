@@ -465,7 +465,8 @@ const GAMES = [
   { id: 'basketball',   name: 'Basketball Legends',             icon: '🏀', type: 'sec', c: ['#5a2a0c', '#180a04'] },
   { id: 'bear',         name: 'Bear',                           icon: '🐻', type: 'sec', c: ['#4a2a1a', '#140a06'] },
   { id: 'leaves',       name: 'Clean All the Leaves',           icon: '🍂', type: 'sec', c: ['#5a3a0c', '#1a1004'] },
-  { id: 'colordie',     name: 'Color or Die',                   icon: '🎨', type: 'sec', c: ['#4a0c4a', '#140414'] },
+  { id: 'cleancrew',    name: 'Clean Crew',                     icon: '🧹', type: 'sec', c: ['#1a3a3a', '#061212'] },
+  { id: 'colordie',    name: 'Color or Die',                   icon: '🎨', type: 'sec', c: ['#4a0c4a', '#140414'] },
   { id: 'sonaria',      name: 'Creatures of Sonaria',           icon: '🐉', type: 'sec', c: ['#0c4a2a', '#04140a'] },
   { id: 'deadrails',    name: 'Dead Rails',                     icon: '🚂', type: 'sec', c: ['#3a2a1a', '#120a06'] },
   { id: 'dti',          name: 'Dress to Impress',               icon: '👗', type: 'sec', c: ['#5a1a4a', '#180614'] },
@@ -666,13 +667,16 @@ function renderSettings(t) {
     <div class="set-row">
       <div><h4>Chave da API</h4><p>
         Gemini: ${ai.gkey ? '✅ salva (' + esc(ai.gkey.slice(0, 8)) + '…)' : '— nenhuma'} ·
-        Claude: ${ai.key ? '✅ salva (' + esc(ai.key.slice(0, 10)) + '…)' : '— nenhuma'}<br>
+        Claude: ${ai.key ? '✅ salva (' + esc(ai.key.slice(0, 10)) + '…)' : '— nenhuma'} ·
+        Tavily (pesquisa): ${ai.tkey ? '✅ salva (' + esc(ai.tkey.slice(0, 9)) + '…)' : '— nenhuma'}<br>
         ${ai.gkey && ai.gBackend ? `Gemini conectado via ${ai.gBackend === 'vertex' ? 'Vertex AI' : 'Google AI Studio'}.<br>` : ''}
-        Cole a chave (Gemini começa com <code>AIza</code> ou <code>AQ.</code>, Claude com <code>sk-ant-</code>). Fica salva só neste navegador.</p></div>
+        Cole a chave (Gemini começa com <code>AIza</code> ou <code>AQ.</code>, Claude com <code>sk-ant-</code>). Fica salva só neste navegador.<br>
+        Com uma chave grátis do <a href="https://tavily.com" target="_blank" rel="noopener" style="color:var(--orange-2)">Tavily</a> (<code>tvly-</code>), o Gemini pesquisa na web mesmo na cota grátis.</p></div>
       <div class="key-row" style="flex:1;max-width:460px">
-        <input id="apiKeyInput" type="password" placeholder="AIza... ou sk-ant-..." autocomplete="off">
+        <input id="apiKeyInput" type="password" placeholder="AIza..., sk-ant-... ou tvly-..." autocomplete="off">
         <button class="btn primary" data-ai="save-key">Salvar</button>
         ${(ai.provider === 'gemini' ? ai.gkey : ai.key) ? '<button class="btn danger" data-ai="remove-key">Remover</button>' : ''}
+        ${ai.tkey ? '<button class="btn danger" data-ai="remove-tkey">Remover Tavily</button>' : ''}
       </div>
     </div>
     ${ai.provider === 'gemini' && ai.gkey ? `
@@ -846,7 +850,7 @@ function renderChat() {
   <section class="card chat">
     <div class="chat-head">
       <div class="orb">🔮</div>
-      <div><h2>Oráculo do Hollow</h2><small>${ai.provider === 'gemini' ? `Gemini (${esc(ai.gLastGood?.[ai.mode] || (ai.mode === 'deep' ? ai.gModelDeep : ai.gModelFast) || 'automático')}) · pesquisa no Google` : 'Claude Opus 5.5 · pesquisa na web'} em tempo real</small></div>
+      <div><h2>Oráculo do Hollow</h2><small>${ai.provider === 'gemini' ? `Gemini (${esc(ai.gLastGood?.[ai.mode] || (ai.mode === 'deep' ? ai.gModelDeep : ai.gModelFast) || 'automático')}) · pesquisa ${ai.tkey ? 'na web (Tavily)' : 'no Google'}` : 'Claude Opus 5.5 · pesquisa na web'} em tempo real</small></div>
       <div class="right">
         <div class="seg" title="Rápida: responde mais rápido. Profunda: faz várias pesquisas e confere fontes.">
           <button data-ai-mode="fast" class="${ai.mode === 'fast' ? 'active' : ''}">⚡ Rápida</button>
@@ -999,9 +1003,72 @@ const FREE_SEARCH_MODELS = ['gemini-2.5-flash-lite', 'gemini-2.5-flash'];
 const searchBlocked = m => Date.now() < (ai.gSearchBlock?.[m] || 0);
 const hhmm = t => new Date(t).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
+// pesquisa feita pelo próprio app no Tavily (grátis, 1000 créditos/mês); os resultados vão para o Gemini responder
+const TAVILY_API = 'https://api.tavily.com/search';
+// acha o jogo citado na pergunta (ou nas perguntas anteriores da conversa, para "e depois?" funcionar)
+function gameInQuestion(question) {
+  const byLen = [...GAMES].sort((a, b) => b.name.length - a.name.length);
+  const texts = [question, ...ai.view.filter(m => m.role === 'user').map(m => m.text).reverse()];
+  for (const t of texts) {
+    const low = t.toLowerCase();
+    const g = byLen.find(g => low.includes(g.name.toLowerCase()));
+    if (g) return g;
+  }
+  return null;
+}
+
+// buscas técnicas em inglês (onde estão os guias/wikis); a pergunta original entra só como complemento
+function tavilyQueries(question, deep) {
+  const q = question.replace(/\s+/g, ' ').trim().slice(0, 250);
+  const g = gameInQuestion(question);
+  const list = g
+    ? [`Roblox The Hollow event "${g.name}" quest badge how to complete step by step`,
+       `"${g.name}" Roblox The Hollow walkthrough guide requirements`,
+       `Roblox The Hollow ${g.name} ${q}`]
+    : [`Roblox The Hollow event ${q}`,
+       `Roblox The Hollow event guide wiki ${q}`,
+       `Roblox The Hollow ${q} reddit`];
+  return deep ? list : list.slice(0, 1);
+}
+
+async function tavilySearch(question, deep, signal, note) {
+  // Rápido: 1 busca avançada (2 créditos). Profundo: 3 buscas avançadas (6 créditos)
+  const queries = tavilyQueries(question, deep);
+  const out = { queries: [], results: [], error: '' };
+  await Promise.all(queries.map(async query => {
+    try {
+      const res = await fetch(TAVILY_API, {
+        method: 'POST',
+        signal,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + ai.tkey },
+        // advanced + texto completo da página: traz o passo a passo inteiro, não só um trecho
+        body: JSON.stringify({ query, search_depth: 'advanced', chunks_per_source: 3, max_results: deep ? 6 : 5, include_raw_content: 'text' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(`${res.status} ${data.detail?.error || data.error || res.statusText}`);
+      out.queries.push(query);
+      for (const r of data.results || []) if (r.url && !out.results.some(x => x.url === r.url)) out.results.push(r);
+      note(`Tavily "${query}": ${data.results?.length || 0} resultado(s)`);
+    } catch (e) {
+      if (signal.aborted) throw e;
+      out.error = e.message;
+      note('Tavily falhou: ' + e.message);
+    }
+  }));
+  return out;
+}
+
+function tavilyHint(msg) {
+  if (/^401/.test(msg)) return ' — chave do Tavily inválida, confira em Configurações';
+  if (/^43[23]/.test(msg)) return ' — os créditos grátis do mês acabaram (renovam todo dia 1)';
+  if (/fetch|network/i.test(msg)) return ' — o navegador não conseguiu falar com o Tavily (internet ou bloqueio do navegador)';
+  return '';
+}
+
 // resumo da pesquisa no Google que vai no topo dos detalhes técnicos
-function searchReport({ usedSearch, usedModel, queries = [], sources = 0, searchOn, searchFails }) {
-  const out = [];
+function searchReport({ usedSearch, usedModel, queries = [], sources = 0, searchOn, searchFails, tav }) {
+  if (tav?.results.length) return [`🔎 PESQUISA NA WEB: ✅ USADA (Tavily) · ${tav.queries.length} busca(s) · ${tav.results.length} resultado(s)${usedModel ? ' · respondido com ' + usedModel : ''}`, ...tav.queries.map(q => '   • ' + q), ''];
+  const out = tav ? [`🔎 TAVILY: ❌ ${tav.error ? 'falhou: ' + tav.error + tavilyHint(tav.error) : 'nenhum resultado'} (tentando a pesquisa do Google)`] : [];
   if (usedSearch && queries.length) out.push(`🔎 PESQUISA NO GOOGLE: ✅ USADA (${usedModel}) · ${queries.length} busca(s) · ${sources} fonte(s)`, ...queries.map(q => '   • ' + q));
   else if (usedSearch) out.push(`🔎 PESQUISA NO GOOGLE: ⚠️ estava ligada no ${usedModel}, mas o modelo decidiu não pesquisar nesta pergunta`);
   else if (!searchOn) out.push('🔎 PESQUISA NO GOOGLE: ❌ NÃO USADA (pausada; clique em "🔎 Reativar pesquisa")');
@@ -1133,6 +1200,7 @@ async function askGemini(question) {
   paintChat('bottom');
   const ticker = setInterval(() => paintChat(), 1000);
   const attempts = [], searchFails = [];
+  let tav = null;
 
   try {
     if (!ai.gModelDeep || !ai.gModelFast) await loadGeminiModels();
@@ -1148,21 +1216,42 @@ async function askGemini(question) {
       ...stableFlash,
       ...(ai.gModels.length ? [] : ['gemini-2.5-flash-lite', 'gemini-2.5-flash']),
     ].filter(n => n && (!ai.gModels.length || ai.gModels.includes(n))))].slice(0, 6);
-    const system = SYSTEM + (deep
+    let system = SYSTEM + (deep
       ? '\n\nMODO PROFUNDO: faça muitas pesquisas diferentes no Google, compare fontes e dê uma resposta completa e verificada.'
       : '\n\nMODO RÁPIDO: SEMPRE use a ferramenta de pesquisa do Google antes de responder (1 ou 2 pesquisas, nunca zero) e responda curto e direto (poucas linhas), sem introdução.');
 
+    // com chave do Tavily o próprio app pesquisa e entrega os resultados (funciona com qualquer modelo, mesmo na cota grátis)
+    if (ai.tkey) {
+      view.steps = [{ label: '🔎 Pesquisando na web (Tavily)...', live: true }];
+      paintChat();
+      tav = await tavilySearch(question, deep, ctrl.signal, note);
+    }
+    const useTavily = !!tav?.results.length;
+    if (useTavily) {
+      for (const r of tav.results) view.sources.push({ url: r.url, title: r.title });
+      system = SYSTEM + (deep
+        ? '\n\nMODO PROFUNDO: compare as fontes dos resultados abaixo e dê uma resposta COMPLETA, DETALHADA e verificada: passo a passo numerado com todos os detalhes técnicos que as fontes trazem (onde fica cada coisa, itens/ferramentas necessários, requisitos, ordem das tarefas, nome exato da badge/recompensa, tempo aproximado), dicas, erros comuns e o que fazer se travar. Aponte quando as fontes discordam.'
+        : '\n\nMODO RÁPIDO: sem introdução, mas NÃO seja vago: dê o passo a passo numerado com os detalhes concretos das fontes (onde ir, o que fazer, itens necessários, nome da badge/recompensa) e 1 ou 2 dicas. Nunca responda com passos genéricos como "procure a missão" ou "complete a tarefa": diga exatamente qual é.')
+        + `\n\nRESULTADOS DA PESQUISA NA WEB (o app acabou de pesquisar por você; você NÃO tem ferramenta de pesquisa, não tente chamar nenhuma).
+Use estes resultados como fonte principal e cite os links que usar no formato [título](url). Se eles não responderem a pergunta, diga isso e complete com o que você já sabe, avisando que pode estar desatualizado.
+
+${tav.results.map((r, i) => `[${i + 1}] ${r.title}\n${r.url}\nResumo: ${r.content || ''}\nTexto da página: ${(r.raw_content || '').replace(/\s+/g, ' ').slice(0, deep ? 8000 : 4000)}`).join('\n\n')}`;
+    }
+
     // a pesquisa é liberada por modelo: na cota grátis os Gemini 3.x não pesquisam, mas os 2.5 Flash/Flash-Lite sim.
     // então primeiro tenta TODOS os modelos que podem pesquisar e só depois responde sem pesquisa
-    const searchOn = Date.now() >= (ai.gSearchPausedUntil || 0);
-    const freeSearch = FREE_SEARCH_MODELS.filter(n => !ai.gModels.length || ai.gModels.includes(n));
-    const searchPool = searchOn ? [...new Set([...candidates, ...freeSearch])].filter(m => !searchBlocked(m)).slice(0, 5) : [];
+    const searchOn = !useTavily && Date.now() >= (ai.gSearchPausedUntil || 0);
+    // os modelos com pesquisa grátis entram logo depois do preferido, senão os 3.x enchem as 5 vagas e eles nunca são testados.
+    // não filtra pela lista da chave: se algum não existir mais, o 404 é rápido e ele é pulado
+    const searchPool = searchOn ? [...new Set([candidates[0], ...FREE_SEARCH_MODELS, ...candidates])].filter(m => m && !searchBlocked(m) && !(m in (ai.gDeadModels || {}))).slice(0, 5) : [];
     const plan = [...searchPool.map(model => ({ model, search: true })), ...candidates.slice(0, 4).map(model => ({ model, search: false }))];
     note(`backend: ${ai.gBackend || 'studio'} · modelos disponíveis: ${ai.gModels.length}`);
     note(`com pesquisa: ${searchPool.join(', ') || 'nenhum'}${searchOn ? '' : ' (pesquisa pausada)'}`);
     const blockedNow = Object.keys(ai.gSearchBlock || {}).filter(searchBlocked);
     if (blockedNow.length) note(`sem pesquisa por enquanto: ${blockedNow.join(', ')}`);
-    view.steps = [{ label: searchPool.length ? '🧠 Pensando e pesquisando no Google...' : '🧠 Pensando (nenhum modelo com pesquisa disponível agora)...', live: true }];
+    view.steps = useTavily
+      ? [...tav.queries.map(q => ({ label: '🔎 ' + q, query: true })), { label: '🧠 Lendo os resultados e respondendo...', live: true }]
+      : [{ label: searchPool.length ? '🧠 Pensando e pesquisando no Google...' : '🧠 Pensando (nenhum modelo com pesquisa disponível agora)...', live: true }];
 
     let result = null, last = null, usedModel = '', usedSearch = false;
     const dead = new Set();
@@ -1172,7 +1261,7 @@ async function askGemini(question) {
       if (!s && i === searchPool.length && searchPool.length) step('🔁 Nenhum modelo conseguiu pesquisar; respondendo sem a pesquisa');
       let thinking = deep ? 'full' : 'low', retried = false;
       for (;;) {
-        const r = await geminiAttempt({ model, search: s, thinking, system: s ? system : system + NO_SEARCH_NOTE, contents: [...ai.gmsgs, userMsg], view, signal: ctrl.signal, note, timeoutMs: deep ? 60000 : 25000 });
+        const r = await geminiAttempt({ model, search: s, thinking, system: s || useTavily ? system : system + NO_SEARCH_NOTE, contents: [...ai.gmsgs, userMsg], view, signal: ctrl.signal, note, timeoutMs: deep ? 60000 : 25000 });
         if (r.aborted) throw new Error('aborted');
         // terminou "certo" mas sem texto (ex.: tentou chamar uma ferramenta que não existe): conta como falha
         if (r.ok && !r.gotText && !r.blocked) { r.ok = false; r.status = 'vazio'; r.msg = 'terminou sem texto (finishReason=' + (r.finish || 'nenhum') + ')'; }
@@ -1186,7 +1275,7 @@ async function askGemini(question) {
         if (r.status === 400 && thinking && /think|thought/i.test(r.msg)) { thinking = false; continue; }
         const why = { 429: 'sem cota', 403: 'sem permissão', 404: 'não existe', 400: 'recusou o pedido', timeout: 'demorou demais', rede: 'falha de conexão', vazio: 'respondeu vazio' }[r.status]
           || (r.status >= 500 ? 'sobrecarregado' : 'erro ' + r.status);
-        if (r.status === 404) dead.add(model);
+        if (r.status === 404) { dead.add(model); ai.gDeadModels = { ...ai.gDeadModels, [model]: Date.now() }; }
         // este modelo não consegue pesquisar (sem cota ou sem acesso à pesquisa): marca e passa para o próximo COM pesquisa
         if (s && [400, 403, 429].includes(r.status)) {
           // "limit: 0" = a cota nem existe (ex.: Gemini 3 na cota grátis), não adianta tentar de novo logo
@@ -1231,7 +1320,7 @@ async function askGemini(question) {
       else view.error ||= 'O Gemini não retornou resposta. Tente de novo.';
     }
     // avisos ficam nos detalhes técnicos para a resposta ficar limpa
-    const warn = searchReport({ usedSearch, usedModel, queries: result.queries, sources: view.sources.length, searchOn, searchFails });
+    const warn = searchReport({ usedSearch, usedModel, queries: result.queries, sources: view.sources.length, searchOn, searchFails, tav });
     // se o modelo mesmo assim abrir a resposta com um "> Aviso: ...", move para os detalhes
     const lead = view.text.match(/^\s*>[^\n]*(?:aviso|pesquisa)[^\n]*(?:\n>[^\n]*)*\n*/i);
     if (lead) { warn.push('Aviso do modelo: ' + lead[0].replace(/^\s*>\s?/gm, '').trim(), ''); view.text = view.text.slice(lead[0].length); }
@@ -1239,7 +1328,7 @@ async function askGemini(question) {
     view.details = [...warn, ...attempts, ...(attempts.length ? [''] : []), ...log].join('\n');
   } catch (err) {
     view.error = aiStream?.aborted ? 'Resposta interrompida.' : err.message;
-    view.details = [...searchReport({ searchOn: Date.now() >= (ai.gSearchPausedUntil || 0), searchFails }), ...attempts, ...log].join('\n');
+    view.details = [...searchReport({ searchOn: Date.now() >= (ai.gSearchPausedUntil || 0), searchFails, tav }), ...attempts, ...log].join('\n');
     view.steps = view.steps.filter(s => !s.live);
   } finally {
     clearInterval(ticker);
@@ -1473,19 +1562,21 @@ document.addEventListener('click', e => {
     if (act === 'new' && !aiStream) { if (!ai.view.length || confirm('Começar uma nova conversa? A atual será apagada.')) { ai.msgs = []; ai.gmsgs = []; ai.view = []; saveAi(); render(); } return; }
     if (act === 'save-key') {
       const v = ($('#apiKeyInput')?.value || '').trim();
+      if (v.startsWith('tvly-')) { ai.tkey = v; saveAi(); render(); return toast('🔑 Chave do Tavily salva! O Oráculo agora pesquisa na web pelo Tavily.'); }
       if (/^(AIza|AQ\.)/.test(v)) {
         ai.gkey = v; ai.provider = 'gemini'; ai.gModelFast = ai.gModelDeep = ''; ai.gBackend = '';
         saveAi(); toast('🔑 Chave do Gemini salva! Buscando modelos...');
         return loadGeminiModels().then(() => { render(); if (ai.gBackend) toast(`✅ Oráculo pronto (${ai.gBackend === 'vertex' ? 'Vertex AI' : 'AI Studio'}) com ${ai.gModelDeep}`); });
       }
       if (v.startsWith('sk-ant-')) { ai.key = v; ai.provider = 'claude'; saveAi(); render(); return toast('🔑 Chave do Claude salva!'); }
-      return toast('⚠️ Chave não reconhecida. Gemini começa com AIza ou AQ., Claude com sk-ant-');
+      return toast('⚠️ Chave não reconhecida. Gemini começa com AIza ou AQ., Claude com sk-ant-, Tavily com tvly-');
     }
+    if (act === 'remove-tkey' && confirm('Remover a chave do Tavily deste navegador?')) { ai.tkey = ''; saveAi(); render(); toast('Chave do Tavily removida.'); }
     if (act === 'remove-key' && confirm('Remover a chave da API deste navegador?')) {
       if (ai.provider === 'gemini') ai.gkey = ''; else ai.key = '';
       saveAi(); render(); toast('Chave removida.');
     }
-    if (act === 'resume-search') { ai.gSearchPausedUntil = 0; ai.gSearchBlock = {}; saveAi(); render(); toast('🔎 A próxima pergunta vai tentar usar a pesquisa no Google.'); }
+    if (act === 'resume-search') { ai.gSearchPausedUntil = 0; ai.gSearchBlock = {}; ai.gDeadModels = {}; saveAi(); render(); toast('🔎 A próxima pergunta vai tentar usar a pesquisa no Google.'); }
     if (act === 'reload-models') loadGeminiModels().then(() => { render(); toast('Lista de modelos atualizada.'); });
     return;
   }
