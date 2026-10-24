@@ -1,5 +1,5 @@
 // Service worker: deixa o app abrir mesmo sem internet (a IA continua precisando de internet)
-const CACHE = 'hollow-v2';
+const CACHE = 'hollow-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
